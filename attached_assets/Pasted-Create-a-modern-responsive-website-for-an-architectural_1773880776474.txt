@@ -1,0 +1,138 @@
+Create a modern, responsive website for an architectural student association called "ARC[University Name] Student Association". Build this as a full-stack web application with the following specifications:
+
+## 🎨 DESIGN REQUIREMENTS
+- Create a sophisticated, architecture-inspired aesthetic using a color palette of concrete grays (#4A4A4A, #7E7E7E, #D3D3D3) with bold accent colors like burnt orange (#E67E22) or deep teal (#1ABC9C)
+- Use typography that pairs a clean sans-serif for body text (like Montserrat or Open Sans) with a bold display font for headings (like Oswald or Archivo)
+- Implement a grid-based layout that reflects architectural drafting aesthetics
+- Include subtle geometric patterns or line details reminiscent of architectural drawings
+- Ensure full mobile responsiveness with a hamburger menu for smaller screens
+- Add smooth scroll animations and hover effects on interactive elements
+
+## 📋 REQUIRED PAGES & SECTIONS
+
+### HOMEPAGE
+- Full-width hero section with an auto-rotating slideshow showcasing: student architecture projects, event photos, and conceptual designs
+- Dynamic "Latest News" feed pulling from a backend database
+- "Upcoming Events" preview showing next 3 events with dates and brief descriptions
+- Prominent call-to-action buttons: "Join Now", "View Gallery", "Upcoming Events"
+- Countdown timer to the next major event or studio deadline
+
+### ABOUT PAGE
+- Association mission statement and history section
+- "Meet the Team" grid showing executive committee members with:
+  - Professional headshot placeholders
+  - Name, position, year of study
+  - Short bio and architectural interests
+  - Social media links
+- Organization structure diagram or visual representation of committees
+
+### EVENTS PAGE
+- Interactive calendar view (can use FullCalendar library)
+- List view of all events with:
+  - Event title, date, time, location
+  - Description and type (workshop, lecture, social, critique)
+  - RSVP button functionality
+  - "Add to Calendar" integration
+- Past events archive with photo galleries and recap summaries
+
+### RESOURCES HUB (Members Area)
+- Academic toolkit section with:
+  - Downloadable study guides and templates
+  - Software tutorials list (Rhino, AutoCAD, Revit, Photoshop)
+  - Equipment booking system for cameras, tablets, laser cutter access
+- Internship & job board showing opportunities with filtering by type
+- Portfolio tips and examples section
+- Peer mentorship program information and sign-up form
+- Password-protected resource library for members only
+
+### GALLERY
+- Filterable portfolio grid with categories:
+  - Studio Work (1st Year, 2nd Year, 3rd Year, Thesis)
+  - Physical Models
+  - Drawings & Sketches
+  - Competition Entries
+- Lightbox functionality for viewing images
+- Upload capability for committee members to add new work
+- Masonry layout option for visual interest
+
+### BLOG - "THE DRAFTING BOARD"
+- Blog post listing with featured images, excerpts, and read more links
+- Categories for: Reviews, Opinion, Alumni Spotlight, Tech Tips
+- Author attribution with student writer profiles
+- Comment section or reaction emojis for engagement
+- Search and filter functionality
+
+### CONTACT PAGE
+- Contact form with fields: name, email, subject, message
+- Interactive map showing association room/faculty location
+- Social media links grid
+- Newsletter signup form
+- FAQ accordion section
+
+## 💻 TECHNICAL REQUIREMENTS
+
+### BACKEND
+- Use Node.js with Express framework
+- MongoDB database for storing:
+  - User/member information
+  - Events data
+  - Blog posts
+  - Gallery entries
+  - Resources
+- JWT authentication for member-only areas
+- File upload functionality for gallery and resources
+- RESTful API architecture
+
+### FRONTEND
+- React.js for dynamic UI components
+- Redux or Context API for state management
+- CSS Modules or Styled Components for styling
+- Axios for API calls
+- React Router for navigation
+- Framer Motion for animations
+
+### FEATURES
+- User registration and login system
+- Admin panel for committee members to:
+  - Create/edit events
+  - Post blog articles
+  - Upload gallery images
+  - Manage resources
+  - View contact form submissions
+- Email notifications for new registrations and contact forms
+- Social media feed integration (Instagram API)
+- Search functionality across all content
+- Dark/light mode toggle
+
+### ADDITIONAL CREATIVE ELEMENTS
+- Interactive poll widget on homepage for member decisions
+- "Quote of the Week" from famous architects
+- Random project showcase generator
+- Studio culture tips carousel
+- Countdown to critiques or submission deadlines
+- Virtual pin-up board where members can "pin" inspiration
+
+## 📱 CONTENT PLACEHOLDERS
+Create realistic placeholder content including:
+- 3 sample upcoming events with dates, locations, descriptions
+- 4 executive committee member profiles
+- 12 gallery images (use placeholder architecture images)
+- 3 blog posts with sample content
+- 5 resource items in the academic toolkit
+- 3 internship/job listings
+
+## 🚀 DEPLOYMENT
+Ensure the application is deployment-ready with:
+- Environment variables for sensitive data
+- Production build configuration
+- Database connection string setup
+- Clear documentation in README.md
+
+## 🎯 USER EXPERIENCE GOALS
+- Load time under 3 seconds
+- Intuitive navigation (no page more than 3 clicks away)
+- Accessible design (WCAG 2.1 compliance basics)
+- Engaging micro-interactions throughout
+- Clear calls-to-action on every page
+
+The website should feel professional yet creative, reflecting the energy of architecture students while maintaining the precision of the discipline. Make it a platform that serves both as an information hub and a showcase of student talent.

@@ -1,0 +1,25 @@
+packages:
+  "framer-motion": "For smooth architectural transitions, staggering lists, and hero animations"
+  "date-fns": "For formatting event dates and countdown timer calculations"
+  "@hookform/resolvers": "For Zod form validation in contact and newsletter forms"
+  "clsx": "Utility for constructing className strings conditionally"
+  "tailwind-merge": "Utility to merge tailwind classes safely"
+
+images:
+  - path: "artifacts/arc-website/public/images/hero-concrete.png"
+    description: "Architectural photography of a brutalist concrete building interior with dramatic light and shadows, minimalist, editorial magazine style"
+    aspect_ratio: "16:9"
+  - path: "artifacts/arc-website/public/images/hero-blueprint.png"
+    description: "Abstract architectural blueprint lines and technical drawings intersecting, dark grey and burnt orange accents"
+    aspect_ratio: "16:9"
+  - path: "artifacts/arc-website/public/images/hero-model.png"
+    description: "Close up of a wooden architectural scale model with warm lighting"
+    aspect_ratio: "16:9"
+  - path: "artifacts/arc-website/public/images/about-bg.png"
+    description: "Subtle geometric concrete texture pattern, minimalist background"
+    aspect_ratio: "16:9"
+
+notes:
+  - Using generated hooks directly from @workspace/api-client-react
+  - Simulating some dynamic API behaviors where endpoints might return empty arrays initially
+  - App relies heavily on architectural aesthetic (Space Grotesk + Inter, Concrete + Burnt Orange)

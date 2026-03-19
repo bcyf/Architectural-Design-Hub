@@ -1,22 +1,35 @@
 openapi: 3.1.0
 info:
-  # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: ARC Student Association API
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: events
+    description: Events management
+  - name: news
+    description: News and blog posts
+  - name: team
+    description: Team members
+  - name: gallery
+    description: Gallery images
+  - name: resources
+    description: Resources and toolkit
+  - name: contact
+    description: Contact form
+  - name: jobs
+    description: Job listings
+
 paths:
   /healthz:
     get:
       operationId: healthCheck
       tags: [health]
       summary: Health check
-      description: Returns server health status
       responses:
         "200":
           description: Healthy
@@ -24,6 +37,240 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /events:
+    get:
+      operationId: listEvents
+      tags: [events]
+      summary: List all events
+      parameters:
+        - name: upcoming
+          in: query
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          schema:
+            type: number
+      responses:
+        "200":
+          description: List of events
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Event"
+    post:
+      operationId: createEvent
+      tags: [events]
+      summary: Create a new event
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "201":
+          description: Created event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /events/{id}:
+    get:
+      operationId: getEvent
+      tags: [events]
+      summary: Get event by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Event details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+
+  /news:
+    get:
+      operationId: listNews
+      tags: [news]
+      summary: List news/blog posts
+      parameters:
+        - name: limit
+          in: query
+          schema:
+            type: number
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of news posts
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/NewsPost"
+    post:
+      operationId: createNewsPost
+      tags: [news]
+      summary: Create a news post
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNewsPostRequest"
+      responses:
+        "201":
+          description: Created post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsPost"
+
+  /news/{id}:
+    get:
+      operationId: getNewsPost
+      tags: [news]
+      summary: Get news post by ID
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: News post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsPost"
+
+  /team:
+    get:
+      operationId: listTeamMembers
+      tags: [team]
+      summary: List team members
+      responses:
+        "200":
+          description: List of team members
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/TeamMember"
+
+  /gallery:
+    get:
+      operationId: listGalleryImages
+      tags: [gallery]
+      summary: List gallery images
+      parameters:
+        - name: category
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of gallery images
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/GalleryImage"
+
+  /resources:
+    get:
+      operationId: listResources
+      tags: [resources]
+      summary: List resources
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of resources
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Resource"
+
+  /jobs:
+    get:
+      operationId: listJobs
+      tags: [jobs]
+      summary: List job listings
+      parameters:
+        - name: type
+          in: query
+          schema:
+            type: string
+      responses:
+        "200":
+          description: List of job listings
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Job"
+
+  /contact:
+    post:
+      operationId: submitContact
+      tags: [contact]
+      summary: Submit contact form
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ContactFormRequest"
+      responses:
+        "200":
+          description: Contact form submitted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /newsletter:
+    post:
+      operationId: subscribeNewsletter
+      tags: [contact]
+      summary: Subscribe to newsletter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/NewsletterRequest"
+      responses:
+        "200":
+          description: Subscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
 components:
   schemas:
     HealthStatus:
@@ -34,3 +281,284 @@ components:
       required:
         - status
 
+    Event:
+      type: object
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        location:
+          type: string
+        type:
+          type: string
+          enum: [workshop, lecture, social, critique, competition, other]
+        imageUrl:
+          type: string
+        isUpcoming:
+          type: boolean
+        rsvpCount:
+          type: number
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - date
+        - time
+        - location
+        - type
+        - isUpcoming
+        - rsvpCount
+        - createdAt
+
+    CreateEventRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        date:
+          type: string
+        time:
+          type: string
+        location:
+          type: string
+        type:
+          type: string
+        imageUrl:
+          type: string
+      required:
+        - title
+        - description
+        - date
+        - time
+        - location
+        - type
+
+    NewsPost:
+      type: object
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        excerpt:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+          enum: [reviews, opinion, alumni-spotlight, tech-tips, news]
+        author:
+          type: string
+        authorRole:
+          type: string
+        imageUrl:
+          type: string
+        publishedAt:
+          type: string
+        readTime:
+          type: number
+      required:
+        - id
+        - title
+        - excerpt
+        - content
+        - category
+        - author
+        - authorRole
+        - publishedAt
+        - readTime
+
+    CreateNewsPostRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        excerpt:
+          type: string
+        content:
+          type: string
+        category:
+          type: string
+        author:
+          type: string
+        authorRole:
+          type: string
+        imageUrl:
+          type: string
+      required:
+        - title
+        - excerpt
+        - content
+        - category
+        - author
+        - authorRole
+
+    TeamMember:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        position:
+          type: string
+        year:
+          type: string
+        bio:
+          type: string
+        interests:
+          type: string
+        imageUrl:
+          type: string
+        email:
+          type: string
+        instagram:
+          type: string
+        linkedin:
+          type: string
+        order:
+          type: number
+      required:
+        - id
+        - name
+        - position
+        - year
+        - bio
+        - interests
+        - order
+
+    GalleryImage:
+      type: object
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        category:
+          type: string
+          enum: [studio-1st, studio-2nd, studio-3rd, thesis, models, drawings, competitions]
+        author:
+          type: string
+        year:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - imageUrl
+        - category
+        - author
+        - year
+        - createdAt
+
+    Resource:
+      type: object
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+          enum: [guide, template, tutorial, software, equipment]
+        fileUrl:
+          type: string
+        software:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - description
+        - type
+        - createdAt
+
+    Job:
+      type: object
+      properties:
+        id:
+          type: number
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        type:
+          type: string
+          enum: [internship, part-time, full-time, volunteer]
+        description:
+          type: string
+        requirements:
+          type: string
+        applicationUrl:
+          type: string
+        deadline:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - title
+        - company
+        - location
+        - type
+        - description
+        - createdAt
+
+    ContactFormRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        email:
+          type: string
+        subject:
+          type: string
+        message:
+          type: string
+      required:
+        - name
+        - email
+        - subject
+        - message
+
+    NewsletterRequest:
+      type: object
+      properties:
+        email:
+          type: string
+        name:
+          type: string
+      required:
+        - email
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+      required:
+        - success
+        - message
