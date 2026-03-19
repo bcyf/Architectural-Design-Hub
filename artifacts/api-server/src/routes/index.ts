@@ -7,6 +7,7 @@ import galleryRouter from "./gallery";
 import resourcesRouter from "./resources";
 import jobsRouter from "./jobs";
 import contactRouter from "./contact";
+import adminRouter from "./admin";
 
 const router: IRouter = Router();
 
@@ -18,5 +19,6 @@ router.use(galleryRouter);
 router.use(resourcesRouter);
 router.use(jobsRouter);
 router.use(contactRouter);
+router.use(adminRouter);
 
 export default router;

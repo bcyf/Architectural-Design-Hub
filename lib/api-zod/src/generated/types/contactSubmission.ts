@@ -6,7 +6,11 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListEventsParams = {
-  upcoming?: boolean;
-  limit?: number;
-};
+export interface ContactSubmission {
+  id: number;
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  createdAt: string;
+}

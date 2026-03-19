@@ -2,7 +2,7 @@ openapi: 3.1.0
 info:
   title: Api
   version: 0.1.0
-  description: ARC Student Association API
+  description: Architecture Student Association FBC API
 servers:
   - url: /api
     description: Base API path
@@ -23,6 +23,8 @@ tags:
     description: Contact form
   - name: jobs
     description: Job listings
+  - name: admin
+    description: Admin operations
 
 paths:
   /healthz:
@@ -97,6 +99,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Event"
+    patch:
+      operationId: updateEvent
+      tags: [events]
+      summary: Update an event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEventRequest"
+      responses:
+        "200":
+          description: Updated event
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Event"
+    delete:
+      operationId: deleteEvent
+      tags: [events]
+      summary: Delete an event
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /news:
     get:
@@ -157,6 +199,46 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/NewsPost"
+    patch:
+      operationId: updateNewsPost
+      tags: [news]
+      summary: Update a news post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateNewsPostRequest"
+      responses:
+        "200":
+          description: Updated post
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/NewsPost"
+    delete:
+      operationId: deleteNewsPost
+      tags: [news]
+      summary: Delete a news post
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /team:
     get:
@@ -172,6 +254,65 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/TeamMember"
+    post:
+      operationId: createTeamMember
+      tags: [team]
+      summary: Create a team member
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamMemberRequest"
+      responses:
+        "201":
+          description: Created team member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+
+  /team/{id}:
+    patch:
+      operationId: updateTeamMember
+      tags: [team]
+      summary: Update a team member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateTeamMemberRequest"
+      responses:
+        "200":
+          description: Updated team member
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/TeamMember"
+    delete:
+      operationId: deleteTeamMember
+      tags: [team]
+      summary: Delete a team member
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /gallery:
     get:
@@ -192,6 +333,65 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/GalleryImage"
+    post:
+      operationId: createGalleryImage
+      tags: [gallery]
+      summary: Add a gallery image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGalleryImageRequest"
+      responses:
+        "201":
+          description: Created gallery image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryImage"
+
+  /gallery/{id}:
+    patch:
+      operationId: updateGalleryImage
+      tags: [gallery]
+      summary: Update a gallery image
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateGalleryImageRequest"
+      responses:
+        "200":
+          description: Updated gallery image
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/GalleryImage"
+    delete:
+      operationId: deleteGalleryImage
+      tags: [gallery]
+      summary: Delete a gallery image
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /resources:
     get:
@@ -212,6 +412,65 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Resource"
+    post:
+      operationId: createResource
+      tags: [resources]
+      summary: Create a resource
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateResourceRequest"
+      responses:
+        "201":
+          description: Created resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
+
+  /resources/{id}:
+    patch:
+      operationId: updateResource
+      tags: [resources]
+      summary: Update a resource
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateResourceRequest"
+      responses:
+        "200":
+          description: Updated resource
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Resource"
+    delete:
+      operationId: deleteResource
+      tags: [resources]
+      summary: Delete a resource
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /jobs:
     get:
@@ -232,6 +491,65 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/Job"
+    post:
+      operationId: createJob
+      tags: [jobs]
+      summary: Create a job listing
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+      responses:
+        "201":
+          description: Created job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+
+  /jobs/{id}:
+    patch:
+      operationId: updateJob
+      tags: [jobs]
+      summary: Update a job listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateJobRequest"
+      responses:
+        "200":
+          description: Updated job
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Job"
+    delete:
+      operationId: deleteJob
+      tags: [jobs]
+      summary: Delete a job listing
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: number
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
 
   /contact:
     post:
@@ -252,6 +570,21 @@ paths:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
 
+  /admin/contacts:
+    get:
+      operationId: listContactSubmissions
+      tags: [admin]
+      summary: List contact form submissions
+      responses:
+        "200":
+          description: List of contact submissions
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ContactSubmission"
+
   /newsletter:
     post:
       operationId: subscribeNewsletter
@@ -270,6 +603,19 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin dashboard stats
+      responses:
+        "200":
+          description: Admin stats
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
 
 components:
   schemas:
@@ -336,6 +682,10 @@ components:
           type: string
         imageUrl:
           type: string
+        isUpcoming:
+          type: boolean
+        rsvpCount:
+          type: number
       required:
         - title
         - description
@@ -396,6 +746,8 @@ components:
           type: string
         imageUrl:
           type: string
+        readTime:
+          type: number
       required:
         - title
         - excerpt
@@ -438,6 +790,36 @@ components:
         - interests
         - order
 
+    CreateTeamMemberRequest:
+      type: object
+      properties:
+        name:
+          type: string
+        position:
+          type: string
+        year:
+          type: string
+        bio:
+          type: string
+        interests:
+          type: string
+        imageUrl:
+          type: string
+        email:
+          type: string
+        instagram:
+          type: string
+        linkedin:
+          type: string
+        order:
+          type: number
+      required:
+        - name
+        - position
+        - year
+        - bio
+        - interests
+
     GalleryImage:
       type: object
       properties:
@@ -467,6 +849,28 @@ components:
         - year
         - createdAt
 
+    CreateGalleryImageRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        category:
+          type: string
+        author:
+          type: string
+        year:
+          type: string
+      required:
+        - title
+        - imageUrl
+        - category
+        - author
+        - year
+
     Resource:
       type: object
       properties:
@@ -491,6 +895,24 @@ components:
         - description
         - type
         - createdAt
+
+    CreateResourceRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        type:
+          type: string
+        fileUrl:
+          type: string
+        software:
+          type: string
+      required:
+        - title
+        - description
+        - type
 
     Job:
       type: object
@@ -525,6 +947,32 @@ components:
         - description
         - createdAt
 
+    CreateJobRequest:
+      type: object
+      properties:
+        title:
+          type: string
+        company:
+          type: string
+        location:
+          type: string
+        type:
+          type: string
+        description:
+          type: string
+        requirements:
+          type: string
+        applicationUrl:
+          type: string
+        deadline:
+          type: string
+      required:
+        - title
+        - company
+        - location
+        - type
+        - description
+
     ContactFormRequest:
       type: object
       properties:
@@ -541,6 +989,29 @@ components:
         - email
         - subject
         - message
+
+    ContactSubmission:
+      type: object
+      properties:
+        id:
+          type: number
+        name:
+          type: string
+        email:
+          type: string
+        subject:
+          type: string
+        message:
+          type: string
+        createdAt:
+          type: string
+      required:
+        - id
+        - name
+        - email
+        - subject
+        - message
+        - createdAt
 
     NewsletterRequest:
       type: object
@@ -562,3 +1033,32 @@ components:
       required:
         - success
         - message
+
+    AdminStats:
+      type: object
+      properties:
+        totalEvents:
+          type: number
+        totalNews:
+          type: number
+        totalGallery:
+          type: number
+        totalTeamMembers:
+          type: number
+        totalResources:
+          type: number
+        totalJobs:
+          type: number
+        totalContacts:
+          type: number
+        upcomingEvents:
+          type: number
+      required:
+        - totalEvents
+        - totalNews
+        - totalGallery
+        - totalTeamMembers
+        - totalResources
+        - totalJobs
+        - totalContacts
+        - upcomingEvents

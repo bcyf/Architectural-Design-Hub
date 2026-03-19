@@ -5,15 +5,12 @@
  * Architecture Student Association FBC API
  * OpenAPI spec version: 0.1.0
  */
-import type { GalleryImageCategory } from "./galleryImageCategory";
 
-export interface GalleryImage {
-  id: number;
+export interface CreateGalleryImageRequest {
   title: string;
   description?: string;
   imageUrl: string;
-  category: GalleryImageCategory;
+  category: string;
   author: string;
   year: string;
-  createdAt: string;
 }

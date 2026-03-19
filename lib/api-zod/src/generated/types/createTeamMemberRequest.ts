@@ -6,8 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface TeamMember {
-  id: number;
+export interface CreateTeamMemberRequest {
   name: string;
   position: string;
   year: string;
@@ -17,5 +16,5 @@ export interface TeamMember {
   email?: string;
   instagram?: string;
   linkedin?: string;
-  order: number;
+  order?: number;
 }

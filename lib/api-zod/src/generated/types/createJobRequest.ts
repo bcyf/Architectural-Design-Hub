@@ -6,14 +6,13 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface CreateEventRequest {
+export interface CreateJobRequest {
   title: string;
-  description: string;
-  date: string;
-  time: string;
+  company: string;
   location: string;
   type: string;
-  imageUrl?: string;
-  isUpcoming?: boolean;
-  rsvpCount?: number;
+  description: string;
+  requirements?: string;
+  applicationUrl?: string;
+  deadline?: string;
 }

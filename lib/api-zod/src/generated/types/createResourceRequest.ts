@@ -6,7 +6,10 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export type ListEventsParams = {
-  upcoming?: boolean;
-  limit?: number;
-};
+export interface CreateResourceRequest {
+  title: string;
+  description: string;
+  type: string;
+  fileUrl?: string;
+  software?: string;
+}
