@@ -47,7 +47,7 @@ export function Navbar() {
               <span className="text-background font-display font-bold leading-none">A</span>
             </div>
             <span className="font-display font-bold text-lg tracking-tight group-hover:text-primary transition-colors duration-300">
-              ARC Student Association
+              Architecture Student Association FBC
             </span>
           </Link>
 

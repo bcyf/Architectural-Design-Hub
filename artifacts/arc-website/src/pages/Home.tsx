@@ -80,7 +80,7 @@ export default function Home() {
               <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">Tomorrow.</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl leading-relaxed">
-              We are the ARC Student Association. Fostering a community of design excellence, critical thinking, and architectural innovation for students.
+              We are the Architecture Student Association FBC. Fostering a community of design excellence, critical thinking, and architectural innovation for students.
             </p>
             <div className="flex flex-col sm:flex-row gap-4">
               <Button size="lg" className="rounded-none text-base px-8 py-6" asChild>

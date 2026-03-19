@@ -42,7 +42,7 @@ export default function About() {
               <SectionHeader title="Our Mission" subtitle="Why We Exist" />
               <div className="space-y-6 text-muted-foreground text-lg leading-relaxed">
                 <p>
-                  The ARC Student Association serves as the bridge between the academic studio environment and the professional architectural world. We exist to support, inspire, and advocate for architecture students throughout their educational journey.
+                  The Architecture Student Association FBC serves as the bridge between the academic studio environment and the professional architectural world. We exist to support, inspire, and advocate for architecture students throughout their educational journey.
                 </p>
                 <p>
                   Through workshops, guest lectures, social events, and networking opportunities, we strive to build a cohesive community that celebrates design excellence and diverse perspectives.
