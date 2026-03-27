@@ -1,10 +1,11 @@
 import { Router, type IRouter } from "express";
 import { db, eventsTable, newsTable, teamTable, galleryTable, resourcesTable, jobsTable, contactTable } from "@workspace/db";
 import { count, eq } from "drizzle-orm";
+import { requireAuth } from "./auth";
 
 const router: IRouter = Router();
 
-router.get("/admin/stats", async (_req, res) => {
+router.get("/admin/stats", requireAuth, async (_req, res) => {
   try {
     const [events] = await db.select({ count: count() }).from(eventsTable);
     const [news] = await db.select({ count: count() }).from(newsTable);
@@ -31,7 +32,7 @@ router.get("/admin/stats", async (_req, res) => {
   }
 });
 
-router.get("/admin/contacts", async (_req, res) => {
+router.get("/admin/contacts", requireAuth, async (_req, res) => {
   try {
     const contacts = await db.select().from(contactTable).orderBy(contactTable.createdAt);
     res.json(contacts.reverse().map((c) => ({ ...c, createdAt: c.createdAt.toISOString() })));

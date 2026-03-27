@@ -239,6 +239,21 @@ export interface AdminStats {
   upcomingEvents: number;
 }
 
+export interface LoginRequest {
+  username: string;
+  password: string;
+}
+
+export interface LoginResponse {
+  token: string;
+  username: string;
+}
+
+export interface AdminUser {
+  username: string;
+  role: string;
+}
+
 export type ListEventsParams = {
   upcoming?: boolean;
   limit?: number;

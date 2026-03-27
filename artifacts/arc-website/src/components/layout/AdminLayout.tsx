@@ -3,6 +3,7 @@ import {
   LayoutDashboard, Calendar, FileText, Image as ImageIcon, 
   Users, Folder, Briefcase, Mail, LogOut, Hexagon
 } from "lucide-react";
+import { removeToken } from "@/lib/auth";
 
 const sidebarLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
@@ -16,7 +17,12 @@ const sidebarLinks = [
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
+
+  function handleLogout() {
+    removeToken();
+    setLocation("/admin/login");
+  }
 
   return (
     <div className="flex h-screen w-full bg-background overflow-hidden font-sans">
@@ -53,14 +59,21 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           })}
         </div>
 
-        <div className="p-4 border-t border-zinc-900">
+        <div className="p-4 border-t border-zinc-900 space-y-1">
           <Link 
             href="/"
             className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-4 h-4 rotate-180" />
             Back to Public Site
           </Link>
+          <button 
+            onClick={handleLogout}
+            className="w-full flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-red-400 hover:text-red-300 hover:bg-red-500/10 transition-colors"
+          >
+            <LogOut className="w-4 h-4" />
+            Sign Out
+          </button>
         </div>
       </aside>
 

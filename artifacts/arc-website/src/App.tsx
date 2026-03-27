@@ -14,7 +14,9 @@ import Contact from "@/pages/Contact";
 import NotFound from "@/pages/not-found";
 
 // Admin Pages
+import AdminLogin from "@/pages/admin/Login";
 import AdminLayout from "@/components/layout/AdminLayout";
+import ProtectedRoute from "@/components/admin/ProtectedRoute";
 import AdminDashboard from "@/pages/admin/Dashboard";
 import AdminEvents from "@/pages/admin/EventsManager";
 import AdminBlog from "@/pages/admin/BlogManager";
@@ -33,18 +35,29 @@ const queryClient = new QueryClient({
   },
 });
 
+function AdminPage({ children }: { children: React.ReactNode }) {
+  return (
+    <ProtectedRoute>
+      <AdminLayout>{children}</AdminLayout>
+    </ProtectedRoute>
+  );
+}
+
 function Router() {
   return (
     <Switch>
-      {/* Admin Routes */}
-      <Route path="/admin" component={() => <AdminLayout><AdminDashboard /></AdminLayout>} />
-      <Route path="/admin/events" component={() => <AdminLayout><AdminEvents /></AdminLayout>} />
-      <Route path="/admin/blog" component={() => <AdminLayout><AdminBlog /></AdminLayout>} />
-      <Route path="/admin/gallery" component={() => <AdminLayout><AdminGallery /></AdminLayout>} />
-      <Route path="/admin/team" component={() => <AdminLayout><AdminTeam /></AdminLayout>} />
-      <Route path="/admin/resources" component={() => <AdminLayout><AdminResources /></AdminLayout>} />
-      <Route path="/admin/jobs" component={() => <AdminLayout><AdminJobs /></AdminLayout>} />
-      <Route path="/admin/contacts" component={() => <AdminLayout><AdminContacts /></AdminLayout>} />
+      {/* Admin Login */}
+      <Route path="/admin/login" component={AdminLogin} />
+
+      {/* Protected Admin Routes */}
+      <Route path="/admin" component={() => <AdminPage><AdminDashboard /></AdminPage>} />
+      <Route path="/admin/events" component={() => <AdminPage><AdminEvents /></AdminPage>} />
+      <Route path="/admin/blog" component={() => <AdminPage><AdminBlog /></AdminPage>} />
+      <Route path="/admin/gallery" component={() => <AdminPage><AdminGallery /></AdminPage>} />
+      <Route path="/admin/team" component={() => <AdminPage><AdminTeam /></AdminPage>} />
+      <Route path="/admin/resources" component={() => <AdminPage><AdminResources /></AdminPage>} />
+      <Route path="/admin/jobs" component={() => <AdminPage><AdminJobs /></AdminPage>} />
+      <Route path="/admin/contacts" component={() => <AdminPage><AdminContacts /></AdminPage>} />
 
       {/* Public Routes */}
       <Route path="/" component={Home} />

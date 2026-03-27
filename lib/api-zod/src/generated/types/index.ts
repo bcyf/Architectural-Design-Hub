@@ -7,6 +7,7 @@
  */
 
 export * from "./adminStats";
+export * from "./adminUser";
 export * from "./contactFormRequest";
 export * from "./contactSubmission";
 export * from "./createEventRequest";
@@ -27,6 +28,8 @@ export * from "./listGalleryImagesParams";
 export * from "./listJobsParams";
 export * from "./listNewsParams";
 export * from "./listResourcesParams";
+export * from "./loginRequest";
+export * from "./loginResponse";
 export * from "./newsletterRequest";
 export * from "./newsPost";
 export * from "./newsPostCategory";

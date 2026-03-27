@@ -612,6 +612,27 @@ export const SubscribeNewsletterResponse = zod.object({
 });
 
 /**
+ * @summary Admin login
+ */
+export const AdminLoginBody = zod.object({
+  username: zod.string(),
+  password: zod.string(),
+});
+
+export const AdminLoginResponse = zod.object({
+  token: zod.string(),
+  username: zod.string(),
+});
+
+/**
+ * @summary Get current admin user
+ */
+export const GetAdminMeResponse = zod.object({
+  username: zod.string(),
+  role: zod.string(),
+});
+
+/**
  * @summary Get admin dashboard stats
  */
 export const GetAdminStatsResponse = zod.object({
