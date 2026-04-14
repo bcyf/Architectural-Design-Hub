@@ -58,11 +58,11 @@ export default function Home() {
       <section className="relative h-[85vh] min-h-[600px] w-full flex items-center bg-foreground overflow-hidden">
         <div className="absolute inset-0 z-0">
           <img 
-            src={`${import.meta.env.BASE_URL}images/hero-concrete.png`} 
-            alt="Architectural Concrete Structure" 
-            className="w-full h-full object-cover opacity-60 mix-blend-overlay"
+            src={`${import.meta.env.BASE_URL}images/hero-bg.jpg`} 
+            alt="Architecture Student Association FBC" 
+            className="w-full h-full object-cover object-center"
           />
-          <div className="absolute inset-0 bg-gradient-to-r from-background/90 via-background/50 to-transparent dark:from-background/90 dark:via-background/70" />
+          <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/55 to-background/20" />
         </div>
         
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
