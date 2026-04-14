@@ -254,6 +254,18 @@ export interface AdminUser {
   role: string;
 }
 
+export interface UploadUrlRequest {
+  name: string;
+  size: number;
+  contentType: string;
+}
+
+export interface UploadUrlResponse {
+  uploadURL: string;
+  objectPath: string;
+  metadata?: UploadUrlRequest;
+}
+
 export type ListEventsParams = {
   upcoming?: boolean;
   limit?: number;

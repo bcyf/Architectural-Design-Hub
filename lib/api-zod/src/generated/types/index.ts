@@ -37,3 +37,5 @@ export * from "./resource";
 export * from "./resourceType";
 export * from "./successResponse";
 export * from "./teamMember";
+export * from "./uploadUrlRequest";
+export * from "./uploadUrlResponse";
