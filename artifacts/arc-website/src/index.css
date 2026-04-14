@@ -57,8 +57,8 @@
   --popover-foreground: 240 10% 12%;
   --popover-border: 240 5% 90%;
   
-  /* Burnt Orange */
-  --primary: 22 85% 53%;
+  /* Forest Green */
+  --primary: 152 60% 32%;
   --primary-foreground: 0 0% 100%;
   
   /* Concrete Gray */
@@ -68,15 +68,15 @@
   --muted: 240 5% 94%;
   --muted-foreground: 240 5% 45%;
   
-  --accent: 22 85% 95%;
-  --accent-foreground: 22 85% 40%;
+  --accent: 152 60% 94%;
+  --accent-foreground: 152 60% 28%;
   
   --destructive: 0 84% 60%;
   --destructive-foreground: 0 0% 100%;
   
   --border: 240 6% 85%;
   --input: 240 6% 85%;
-  --ring: 22 85% 53%;
+  --ring: 152 60% 32%;
   
   --radius: 0rem; /* Brutalist/Sharp corners */
   
@@ -96,8 +96,8 @@
   --popover-foreground: 0 0% 98%;
   --popover-border: 240 10% 18%;
   
-  /* Burnt Orange slightly brighter for dark mode */
-  --primary: 22 90% 60%;
+  /* Forest Green slightly brighter for dark mode */
+  --primary: 152 65% 42%;
   --primary-foreground: 0 0% 100%;
   
   /* Dark Concrete */

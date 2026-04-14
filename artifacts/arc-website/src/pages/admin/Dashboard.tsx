@@ -11,7 +11,7 @@ export default function AdminDashboard() {
   const cards = [
     { title: "Total Events", value: stats?.totalEvents || 0, icon: Calendar, color: "text-blue-500" },
     { title: "Upcoming Events", value: stats?.upcomingEvents || 0, icon: Activity, color: "text-green-500" },
-    { title: "Blog Posts", value: stats?.totalNews || 0, icon: FileText, color: "text-orange-500" },
+    { title: "Blog Posts", value: stats?.totalNews || 0, icon: FileText, color: "text-green-600" },
     { title: "Gallery Images", value: stats?.totalGallery || 0, icon: ImageIcon, color: "text-purple-500" },
     { title: "Team Members", value: stats?.totalTeamMembers || 0, icon: Users, color: "text-pink-500" },
     { title: "Resources", value: stats?.totalResources || 0, icon: Folder, color: "text-cyan-500" },

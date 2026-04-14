@@ -77,7 +77,7 @@ export default function Home() {
             </div>
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display font-bold leading-tight mb-6 text-foreground">
               Designing <br/>
-              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-orange-400">Tomorrow.</span>
+              <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-green-400">Tomorrow.</span>
             </h1>
             <p className="text-lg md:text-xl text-muted-foreground mb-10 max-w-2xl leading-relaxed">
               We are the Architecture Student Association FBC. Fostering a community of design excellence, critical thinking, and architectural innovation for students.
