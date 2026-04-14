@@ -5,3 +5,4 @@ export * from "./gallery";
 export * from "./resources";
 export * from "./jobs";
 export * from "./contact";
+export * from "./settings";

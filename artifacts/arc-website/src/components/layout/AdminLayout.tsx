@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, Calendar, FileText, Image as ImageIcon, 
-  Users, Folder, Briefcase, Mail, LogOut, Hexagon
+  Users, Folder, Briefcase, Mail, LogOut, Hexagon, Settings
 } from "lucide-react";
 import { removeToken } from "@/lib/auth";
 
@@ -14,6 +14,10 @@ const sidebarLinks = [
   { href: "/admin/resources", label: "Resources", icon: Folder },
   { href: "/admin/jobs", label: "Jobs", icon: Briefcase },
   { href: "/admin/contacts", label: "Contacts", icon: Mail },
+];
+
+const bottomLinks = [
+  { href: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -60,6 +64,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         </div>
 
         <div className="p-4 border-t border-zinc-900 space-y-1">
+          {bottomLinks.map((link) => {
+            const Icon = link.icon;
+            const isActive = location === link.href;
+            return (
+              <Link
+                key={link.href}
+                href={link.href}
+                className={`flex items-center gap-3 px-3 py-2.5 rounded-md transition-all duration-200 text-sm font-medium ${
+                  isActive
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-zinc-400 hover:text-white hover:bg-zinc-900"
+                }`}
+              >
+                <Icon className="w-4 h-4 opacity-70" />
+                {link.label}
+              </Link>
+            );
+          })}
+          <div className="border-t border-zinc-800 my-1" />
           <Link 
             href="/"
             className="flex items-center gap-3 px-3 py-2.5 rounded-md text-sm font-medium text-zinc-400 hover:text-white hover:bg-zinc-900 transition-colors"
