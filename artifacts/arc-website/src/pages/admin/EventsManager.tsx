@@ -18,6 +18,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
 import { Plus, Edit, Trash2, Calendar, MapPin } from "lucide-react";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
@@ -242,7 +243,13 @@ export default function EventsManager() {
               </div>
 
               <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                <FormItem><FormLabel>Image URL (Optional)</FormLabel><FormControl><Input placeholder="https://..." {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel>Event Image (Optional)</FormLabel>
+                  <FormControl>
+                    <ImageUploader value={field.value || ""} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )} />
 
               <div className="grid grid-cols-2 gap-4">

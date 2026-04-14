@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
 import { Plus, Edit, Trash2, Image as ImageIcon } from "lucide-react";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
@@ -151,7 +152,13 @@ export default function GalleryManager() {
                 <FormItem><FormLabel>Title</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                <FormItem><FormLabel>Image URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel>Image</FormLabel>
+                  <FormControl>
+                    <ImageUploader value={field.value || ""} onChange={field.onChange} required />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )} />
               <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="category" render={({ field }) => (

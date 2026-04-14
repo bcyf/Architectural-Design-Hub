@@ -16,6 +16,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
 import { Plus, Edit, Trash2 } from "lucide-react";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { useToast } from "@/hooks/use-toast";
 
 const teamSchema = z.object({
@@ -197,7 +198,13 @@ export default function TeamManager() {
                 <FormItem><FormLabel>Interests</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
               )} />
               <FormField control={form.control} name="imageUrl" render={({ field }) => (
-                <FormItem><FormLabel>Image URL (Optional)</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel>Profile Photo (Optional)</FormLabel>
+                  <FormControl>
+                    <ImageUploader value={field.value || ""} onChange={field.onChange} variant="avatar" />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
               )} />
 
               <div className="grid grid-cols-3 gap-4 border-t pt-4">
