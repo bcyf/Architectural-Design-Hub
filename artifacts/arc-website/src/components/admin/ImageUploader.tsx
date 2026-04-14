@@ -1,4 +1,4 @@
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { useUpload } from "@workspace/object-storage-web";
 import { Upload, X, ImageIcon, Loader2, User } from "lucide-react";
 
@@ -12,6 +12,10 @@ interface ImageUploaderProps {
 export function ImageUploader({ value, onChange, variant = "landscape", required = false }: ImageUploaderProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [preview, setPreview] = useState<string>(value || "");
+
+  useEffect(() => {
+    setPreview(value || "");
+  }, [value]);
 
   const { uploadFile, isUploading, progress } = useUpload({
     onSuccess: (response) => {
