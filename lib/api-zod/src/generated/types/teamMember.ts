@@ -18,4 +18,6 @@ export interface TeamMember {
   instagram?: string;
   linkedin?: string;
   order: number;
+  isPreviousExec?: boolean;
+  academicYear?: string;
 }

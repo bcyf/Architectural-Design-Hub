@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -14,6 +14,8 @@ export const teamTable = pgTable("team", {
   instagram: text("instagram"),
   linkedin: text("linkedin"),
   order: integer("order").notNull().default(0),
+  isPreviousExec: boolean("is_previous_exec").notNull().default(false),
+  academicYear: text("academic_year"),
 });
 
 export const insertTeamSchema = createInsertSchema(teamTable).omit({ id: true });

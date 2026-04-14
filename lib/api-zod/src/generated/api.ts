@@ -271,6 +271,8 @@ export const ListTeamMembersResponseItem = zod.object({
   instagram: zod.string().optional(),
   linkedin: zod.string().optional(),
   order: zod.number(),
+  isPreviousExec: zod.boolean().optional(),
+  academicYear: zod.string().optional(),
 });
 export const ListTeamMembersResponse = zod.array(ListTeamMembersResponseItem);
 
@@ -288,6 +290,8 @@ export const CreateTeamMemberBody = zod.object({
   instagram: zod.string().optional(),
   linkedin: zod.string().optional(),
   order: zod.number().optional(),
+  isPreviousExec: zod.boolean().optional(),
+  academicYear: zod.string().optional(),
 });
 
 /**
@@ -308,6 +312,8 @@ export const UpdateTeamMemberBody = zod.object({
   instagram: zod.string().optional(),
   linkedin: zod.string().optional(),
   order: zod.number().optional(),
+  isPreviousExec: zod.boolean().optional(),
+  academicYear: zod.string().optional(),
 });
 
 export const UpdateTeamMemberResponse = zod.object({
@@ -322,6 +328,8 @@ export const UpdateTeamMemberResponse = zod.object({
   instagram: zod.string().optional(),
   linkedin: zod.string().optional(),
   order: zod.number(),
+  isPreviousExec: zod.boolean().optional(),
+  academicYear: zod.string().optional(),
 });
 
 /**

@@ -93,6 +93,8 @@ export interface TeamMember {
   instagram?: string;
   linkedin?: string;
   order: number;
+  isPreviousExec?: boolean;
+  academicYear?: string;
 }
 
 export interface CreateTeamMemberRequest {
@@ -106,6 +108,8 @@ export interface CreateTeamMemberRequest {
   instagram?: string;
   linkedin?: string;
   order?: number;
+  isPreviousExec?: boolean;
+  academicYear?: string;
 }
 
 export type GalleryImageCategory =

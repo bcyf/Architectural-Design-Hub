@@ -11,6 +11,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Badge } from "@/components/ui/badge";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
@@ -30,9 +32,17 @@ const teamSchema = z.object({
   instagram: z.string().optional().or(z.literal("")),
   linkedin: z.string().optional().or(z.literal("")),
   order: z.coerce.number().default(0),
+  isPreviousExec: z.boolean().default(false),
+  academicYear: z.string().optional().or(z.literal("")),
 });
 
 type FormValues = z.infer<typeof teamSchema>;
+
+const DEFAULT_FORM: FormValues = {
+  name: "", position: "", year: "", bio: "", interests: "",
+  imageUrl: "", email: "", instagram: "", linkedin: "",
+  order: 0, isPreviousExec: false, academicYear: "",
+};
 
 export default function TeamManager() {
   const { data: team, isLoading } = useListTeamMembers();
@@ -49,22 +59,32 @@ export default function TeamManager() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(teamSchema),
-    defaultValues: {
-      name: "", position: "", year: "", bio: "", interests: "", imageUrl: "", email: "", instagram: "", linkedin: "", order: 0
-    },
+    defaultValues: DEFAULT_FORM,
   });
+
+  const watchIsPrevious = form.watch("isPreviousExec");
 
   const handleOpenCreate = () => {
     setEditingMember(null);
-    form.reset({ name: "", position: "", year: "", bio: "", interests: "", imageUrl: "", email: "", instagram: "", linkedin: "", order: 0 });
+    form.reset(DEFAULT_FORM);
     setIsDialogOpen(true);
   };
 
   const handleOpenEdit = (member: TeamMember) => {
     setEditingMember(member);
     form.reset({
-      name: member.name, position: member.position, year: member.year, bio: member.bio, interests: member.interests,
-      imageUrl: member.imageUrl || "", email: member.email || "", instagram: member.instagram || "", linkedin: member.linkedin || "", order: member.order
+      name: member.name,
+      position: member.position,
+      year: member.year,
+      bio: member.bio,
+      interests: member.interests,
+      imageUrl: member.imageUrl || "",
+      email: member.email || "",
+      instagram: member.instagram || "",
+      linkedin: member.linkedin || "",
+      order: member.order,
+      isPreviousExec: member.isPreviousExec ?? false,
+      academicYear: member.academicYear || "",
     });
     setIsDialogOpen(true);
   };
@@ -100,6 +120,12 @@ export default function TeamManager() {
     });
   };
 
+  const currentMembers = team?.filter(m => !m.isPreviousExec).sort((a, b) => a.order - b.order) ?? [];
+  const previousMembers = team?.filter(m => m.isPreviousExec).sort((a, b) => {
+    if (a.academicYear && b.academicYear) return b.academicYear.localeCompare(a.academicYear);
+    return a.order - b.order;
+  }) ?? [];
+
   return (
     <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500">
       <div className="flex justify-between items-center">
@@ -112,60 +138,129 @@ export default function TeamManager() {
         </Button>
       </div>
 
-      <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
-        <Table>
-          <TableHeader>
-            <TableRow className="bg-muted/50">
-              <TableHead className="w-16">Order</TableHead>
-              <TableHead>Member Info</TableHead>
-              <TableHead>Role</TableHead>
-              <TableHead>Year</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
-            </TableRow>
-          </TableHeader>
-          <TableBody>
-            {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8">Loading...</TableCell></TableRow>
-            ) : team?.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No members found.</TableCell></TableRow>
-            ) : (
-              team?.map((member) => (
-                <TableRow key={member.id}>
-                  <TableCell className="font-mono text-muted-foreground">{member.order}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-3">
-                      {member.imageUrl ? (
-                        <img src={member.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover bg-muted" />
-                      ) : (
-                        <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">
-                          {member.name.charAt(0)}
+      {/* Current Executives */}
+      <div>
+        <h2 className="text-lg font-semibold mb-3">Current Executive Board</h2>
+        <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="w-16">Order</TableHead>
+                <TableHead>Member Info</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Year</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow><TableCell colSpan={5} className="text-center py-8">Loading...</TableCell></TableRow>
+              ) : currentMembers.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No current members. Add one above.</TableCell></TableRow>
+              ) : (
+                currentMembers.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell className="font-mono text-muted-foreground">{member.order}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {member.imageUrl ? (
+                          <img src={member.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover bg-muted" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-xs">
+                            {member.name.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium">{member.name}</div>
+                          <div className="text-xs text-muted-foreground">{member.email || "No email"}</div>
                         </div>
-                      )}
-                      <div>
-                        <div className="font-medium">{member.name}</div>
-                        <div className="text-xs text-muted-foreground">{member.email || "No email"}</div>
                       </div>
-                    </div>
-                  </TableCell>
-                  <TableCell>{member.position}</TableCell>
-                  <TableCell>{member.year}</TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(member)}>
-                        <Edit className="w-4 h-4 text-muted-foreground hover:text-foreground" />
-                      </Button>
-                      <Button variant="ghost" size="icon" onClick={() => setItemToDelete(member.id)}>
-                        <Trash2 className="w-4 h-4 text-destructive hover:text-destructive/80" />
-                      </Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
+                    </TableCell>
+                    <TableCell>{member.position}</TableCell>
+                    <TableCell>{member.year}</TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(member)}>
+                          <Edit className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setItemToDelete(member.id)}>
+                          <Trash2 className="w-4 h-4 text-destructive hover:text-destructive/80" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
       </div>
 
+      {/* Previous Executives */}
+      <div>
+        <h2 className="text-lg font-semibold mb-3">Previous Executives</h2>
+        <div className="bg-card border border-border rounded-lg shadow-sm overflow-hidden">
+          <Table>
+            <TableHeader>
+              <TableRow className="bg-muted/50">
+                <TableHead className="w-16">Order</TableHead>
+                <TableHead>Member Info</TableHead>
+                <TableHead>Role</TableHead>
+                <TableHead>Academic Year</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {isLoading ? (
+                <TableRow><TableCell colSpan={5} className="text-center py-8">Loading...</TableCell></TableRow>
+              ) : previousMembers.length === 0 ? (
+                <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No previous executives yet.</TableCell></TableRow>
+              ) : (
+                previousMembers.map((member) => (
+                  <TableRow key={member.id}>
+                    <TableCell className="font-mono text-muted-foreground">{member.order}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        {member.imageUrl ? (
+                          <img src={member.imageUrl} alt="" className="w-8 h-8 rounded-full object-cover bg-muted" />
+                        ) : (
+                          <div className="w-8 h-8 rounded-full bg-muted text-muted-foreground flex items-center justify-center font-bold text-xs">
+                            {member.name.charAt(0)}
+                          </div>
+                        )}
+                        <div>
+                          <div className="font-medium">{member.name}</div>
+                          <div className="text-xs text-muted-foreground">{member.email || "No email"}</div>
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell>{member.position}</TableCell>
+                    <TableCell>
+                      {member.academicYear ? (
+                        <Badge variant="outline">{member.academicYear}</Badge>
+                      ) : (
+                        <span className="text-muted-foreground text-sm">—</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <div className="flex justify-end gap-2">
+                        <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(member)}>
+                          <Edit className="w-4 h-4 text-muted-foreground hover:text-foreground" />
+                        </Button>
+                        <Button variant="ghost" size="icon" onClick={() => setItemToDelete(member.id)}>
+                          <Trash2 className="w-4 h-4 text-destructive hover:text-destructive/80" />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </div>
+
+      {/* Add / Edit Dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -173,6 +268,34 @@ export default function TeamManager() {
           </DialogHeader>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+
+              {/* Previous Executive toggle */}
+              <FormField control={form.control} name="isPreviousExec" render={({ field }) => (
+                <FormItem className="flex items-center gap-3 rounded-md border border-border p-3 bg-muted/30">
+                  <FormControl>
+                    <Checkbox
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                    />
+                  </FormControl>
+                  <div>
+                    <FormLabel className="cursor-pointer font-medium">Previous Executive</FormLabel>
+                    <p className="text-xs text-muted-foreground">Check this if the member served in a past term.</p>
+                  </div>
+                </FormItem>
+              )} />
+
+              {/* Academic Year — only visible for previous execs */}
+              {watchIsPrevious && (
+                <FormField control={form.control} name="academicYear" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Academic Year (e.g., 2023–2024)</FormLabel>
+                    <FormControl><Input placeholder="2023–2024" {...field} /></FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+              )}
+
               <div className="grid grid-cols-2 gap-4">
                 <FormField control={form.control} name="name" render={({ field }) => (
                   <FormItem><FormLabel>Name</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
