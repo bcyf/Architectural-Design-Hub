@@ -26,6 +26,7 @@ import type {
   CreateJobRequest,
   CreateNewsPostRequest,
   CreateResourceRequest,
+  CreateRsvpRequest,
   CreateTeamMemberRequest,
   Event,
   GalleryImage,
@@ -41,6 +42,7 @@ import type {
   NewsPost,
   NewsletterRequest,
   Resource,
+  Rsvp,
   SuccessResponse,
   TeamMember,
   UploadUrlRequest,
@@ -566,6 +568,180 @@ export const useDeleteEvent = <
 > => {
   return useMutation(getDeleteEventMutationOptions(options));
 };
+
+/**
+ * @summary RSVP to an event
+ */
+export const getCreateRsvpUrl = (id: number) => {
+  return `/api/events/${id}/rsvp`;
+};
+
+export const createRsvp = async (
+  id: number,
+  createRsvpRequest: CreateRsvpRequest,
+  options?: RequestInit,
+): Promise<Rsvp> => {
+  return customFetch<Rsvp>(getCreateRsvpUrl(id), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createRsvpRequest),
+  });
+};
+
+export const getCreateRsvpMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createRsvp>>,
+    TError,
+    { id: number; data: BodyType<CreateRsvpRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createRsvp>>,
+  TError,
+  { id: number; data: BodyType<CreateRsvpRequest> },
+  TContext
+> => {
+  const mutationKey = ["createRsvp"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createRsvp>>,
+    { id: number; data: BodyType<CreateRsvpRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return createRsvp(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateRsvpMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createRsvp>>
+>;
+export type CreateRsvpMutationBody = BodyType<CreateRsvpRequest>;
+export type CreateRsvpMutationError = ErrorType<unknown>;
+
+/**
+ * @summary RSVP to an event
+ */
+export const useCreateRsvp = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createRsvp>>,
+    TError,
+    { id: number; data: BodyType<CreateRsvpRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createRsvp>>,
+  TError,
+  { id: number; data: BodyType<CreateRsvpRequest> },
+  TContext
+> => {
+  return useMutation(getCreateRsvpMutationOptions(options));
+};
+
+/**
+ * @summary List RSVPs for an event (admin)
+ */
+export const getListEventRsvpsUrl = (id: number) => {
+  return `/api/events/${id}/rsvps`;
+};
+
+export const listEventRsvps = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Rsvp[]> => {
+  return customFetch<Rsvp[]>(getListEventRsvpsUrl(id), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListEventRsvpsQueryKey = (id: number) => {
+  return [`/api/events/${id}/rsvps`] as const;
+};
+
+export const getListEventRsvpsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listEventRsvps>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listEventRsvps>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListEventRsvpsQueryKey(id);
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listEventRsvps>>> = ({
+    signal,
+  }) => listEventRsvps(id, { signal, ...requestOptions });
+
+  return {
+    queryKey,
+    queryFn,
+    enabled: !!id,
+    ...queryOptions,
+  } as UseQueryOptions<
+    Awaited<ReturnType<typeof listEventRsvps>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListEventRsvpsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listEventRsvps>>
+>;
+export type ListEventRsvpsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List RSVPs for an event (admin)
+ */
+
+export function useListEventRsvps<
+  TData = Awaited<ReturnType<typeof listEventRsvps>>,
+  TError = ErrorType<unknown>,
+>(
+  id: number,
+  options?: {
+    query?: UseQueryOptions<
+      Awaited<ReturnType<typeof listEventRsvps>>,
+      TError,
+      TData
+    >;
+    request?: SecondParameter<typeof customFetch>;
+  },
+): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListEventRsvpsQueryOptions(id, options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
 
 /**
  * @summary List news/blog posts

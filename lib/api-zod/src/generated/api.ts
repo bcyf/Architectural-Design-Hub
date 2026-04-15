@@ -140,6 +140,34 @@ export const DeleteEventResponse = zod.object({
 });
 
 /**
+ * @summary RSVP to an event
+ */
+export const CreateRsvpParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const CreateRsvpBody = zod.object({
+  name: zod.string(),
+  email: zod.string(),
+});
+
+/**
+ * @summary List RSVPs for an event (admin)
+ */
+export const ListEventRsvpsParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ListEventRsvpsResponseItem = zod.object({
+  id: zod.number(),
+  eventId: zod.number(),
+  name: zod.string(),
+  email: zod.string(),
+  createdAt: zod.string(),
+});
+export const ListEventRsvpsResponse = zod.array(ListEventRsvpsResponseItem);
+
+/**
  * @summary List news/blog posts
  */
 export const ListNewsQueryParams = zod.object({

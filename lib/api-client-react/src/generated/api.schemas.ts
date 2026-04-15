@@ -270,6 +270,19 @@ export interface UploadUrlResponse {
   metadata?: UploadUrlRequest;
 }
 
+export interface Rsvp {
+  id: number;
+  eventId: number;
+  name: string;
+  email: string;
+  createdAt: string;
+}
+
+export interface CreateRsvpRequest {
+  name: string;
+  email: string;
+}
+
 export type ListEventsParams = {
   upcoming?: boolean;
   limit?: number;
