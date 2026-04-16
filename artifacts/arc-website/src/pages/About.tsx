@@ -152,9 +152,9 @@ export default function About() {
                   </span>
                   <div className="h-px flex-1 bg-border" />
                 </div>
-                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-6">
+                <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-8">
                   {(members as any[]).sort((a, b) => a.order - b.order).map((member: any) => (
-                    <div key={member.id} className="group text-center">
+                    <div key={member.id} className="group">
                       <div className="aspect-square overflow-hidden mb-3 relative">
                         <img
                           src={member.imageUrl || "https://images.unsplash.com/photo-1633332755192-727a05c4013d?w=500&q=80"}
@@ -163,7 +163,10 @@ export default function About() {
                         />
                       </div>
                       <h4 className="font-semibold text-sm">{member.name}</h4>
-                      <p className="text-primary text-xs font-medium mt-0.5">{member.position}</p>
+                      <p className="text-primary text-xs font-medium mt-0.5 mb-2">{member.position}</p>
+                      {member.bio && (
+                        <p className="text-muted-foreground text-xs leading-relaxed">{member.bio}</p>
+                      )}
                     </div>
                   ))}
                 </div>
