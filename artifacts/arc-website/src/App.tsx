@@ -30,6 +30,7 @@ import AdminNewsletter from "@/pages/admin/NewsletterManager";
 import AdminQuotes from "@/pages/admin/QuotesManager";
 import AdminFaq from "@/pages/admin/FaqManager";
 import FAQ from "@/pages/FAQ";
+import BlogPost from "@/pages/BlogPost";
 import Privacy from "@/pages/Privacy";
 import Terms from "@/pages/Terms";
 
@@ -78,6 +79,7 @@ function Router() {
       <Route path="/gallery" component={Gallery} />
       <Route path="/blog" component={Blog} />
       <Route path="/contact" component={Contact} />
+      <Route path="/blog/:id" component={BlogPost} />
       <Route path="/faq" component={FAQ} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />

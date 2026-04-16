@@ -35,13 +35,15 @@ export default function Blog() {
               news?.map((post: any) => (
                 <article key={post.id} className="group border-b border-border pb-16 last:border-0">
                   {post.imageUrl && (
-                    <div className="aspect-[21/9] overflow-hidden mb-8">
-                      <img 
-                        src={post.imageUrl} 
-                        alt={post.title} 
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                      />
-                    </div>
+                    <Link href={`/blog/${post.id}`}>
+                      <div className="aspect-[21/9] overflow-hidden mb-8">
+                        <img 
+                          src={post.imageUrl} 
+                          alt={post.title} 
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                        />
+                      </div>
+                    </Link>
                   )}
                   <div className="flex items-center gap-4 text-sm font-medium uppercase tracking-widest text-muted-foreground mb-4">
                     <span className="text-primary">{post.category}</span>
@@ -50,15 +52,17 @@ export default function Blog() {
                     <span className="w-1 h-1 bg-border rounded-full" />
                     <span>{post.readTime} Min Read</span>
                   </div>
-                  <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 group-hover:text-primary transition-colors cursor-pointer">
-                    {post.title}
-                  </h2>
+                  <Link href={`/blog/${post.id}`}>
+                    <h2 className="text-3xl md:text-4xl font-display font-bold mb-4 group-hover:text-primary transition-colors cursor-pointer">
+                      {post.title}
+                    </h2>
+                  </Link>
                   <p className="text-muted-foreground text-lg leading-relaxed mb-6">
                     {post.excerpt}
                   </p>
                   <div className="flex items-center justify-between">
                     <div className="text-sm font-medium">By {post.author}</div>
-                    <span className="text-primary font-medium hover:underline cursor-pointer">Read Full Article →</span>
+                    <Link href={`/blog/${post.id}`} className="text-primary font-medium hover:underline">Read Full Article →</Link>
                   </div>
                 </article>
               ))
