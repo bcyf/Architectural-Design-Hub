@@ -47,7 +47,7 @@ export function Footer() {
                 className="h-16 w-auto object-contain bg-white p-1.5"
               />
               <span className="font-display font-bold text-lg tracking-tight">
-                ARC Association
+                ASA Organisation
               </span>
             </Link>
             <p className="text-muted-foreground text-sm max-w-xs leading-relaxed">
