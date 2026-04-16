@@ -283,6 +283,32 @@ export interface CreateRsvpRequest {
   email: string;
 }
 
+export interface Subscriber {
+  id: number;
+  email: string;
+  name?: string | null;
+  subscribedAt: string;
+}
+
+export interface NewsletterCampaign {
+  id: number;
+  title: string;
+  subject: string;
+  content: string;
+  status: string;
+  sentAt?: string | null;
+  recipientCount: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateNewsletterCampaignRequest {
+  title: string;
+  subject: string;
+  content: string;
+  status?: string;
+}
+
 export type ListEventsParams = {
   upcoming?: boolean;
   limit?: number;

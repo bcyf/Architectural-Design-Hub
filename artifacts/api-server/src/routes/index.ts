@@ -10,6 +10,7 @@ import resourcesRouter from "./resources";
 import jobsRouter from "./jobs";
 import contactRouter from "./contact";
 import adminRouter from "./admin";
+import newsletterRouter from "./newsletter";
 
 const router: IRouter = Router();
 
@@ -24,5 +25,6 @@ router.use(resourcesRouter);
 router.use(jobsRouter);
 router.use(contactRouter);
 router.use(adminRouter);
+router.use(newsletterRouter);
 
 export default router;

@@ -648,6 +648,114 @@ export const SubscribeNewsletterResponse = zod.object({
 });
 
 /**
+ * @summary List all newsletter subscribers (admin)
+ */
+export const ListSubscribersResponseItem = zod.object({
+  id: zod.number(),
+  email: zod.string(),
+  name: zod.string().nullish(),
+  subscribedAt: zod.string(),
+});
+export const ListSubscribersResponse = zod.array(ListSubscribersResponseItem);
+
+/**
+ * @summary Remove a subscriber (admin)
+ */
+export const DeleteSubscriberParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteSubscriberResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
+});
+
+/**
+ * @summary List all newsletter campaigns (admin)
+ */
+export const ListNewsletterCampaignsResponseItem = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  subject: zod.string(),
+  content: zod.string(),
+  status: zod.string(),
+  sentAt: zod.string().nullish(),
+  recipientCount: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+export const ListNewsletterCampaignsResponse = zod.array(
+  ListNewsletterCampaignsResponseItem,
+);
+
+/**
+ * @summary Create a newsletter campaign (admin)
+ */
+export const CreateNewsletterCampaignBody = zod.object({
+  title: zod.string(),
+  subject: zod.string(),
+  content: zod.string(),
+  status: zod.string().optional(),
+});
+
+/**
+ * @summary Update a newsletter campaign (admin)
+ */
+export const UpdateNewsletterCampaignParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateNewsletterCampaignBody = zod.object({
+  title: zod.string(),
+  subject: zod.string(),
+  content: zod.string(),
+  status: zod.string().optional(),
+});
+
+export const UpdateNewsletterCampaignResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  subject: zod.string(),
+  content: zod.string(),
+  status: zod.string(),
+  sentAt: zod.string().nullish(),
+  recipientCount: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
+ * @summary Delete a newsletter campaign (admin)
+ */
+export const DeleteNewsletterCampaignParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteNewsletterCampaignResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
+});
+
+/**
+ * @summary Mark a campaign as sent (admin)
+ */
+export const SendNewsletterCampaignParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const SendNewsletterCampaignResponse = zod.object({
+  id: zod.number(),
+  title: zod.string(),
+  subject: zod.string(),
+  content: zod.string(),
+  status: zod.string(),
+  sentAt: zod.string().nullish(),
+  recipientCount: zod.number(),
+  createdAt: zod.string(),
+  updatedAt: zod.string(),
+});
+
+/**
  * @summary Request a presigned URL for file upload
  */
 export const RequestUploadUrlBody = zod.object({

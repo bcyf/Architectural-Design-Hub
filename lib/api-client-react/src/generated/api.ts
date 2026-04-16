@@ -25,6 +25,7 @@ import type {
   CreateGalleryImageRequest,
   CreateJobRequest,
   CreateNewsPostRequest,
+  CreateNewsletterCampaignRequest,
   CreateResourceRequest,
   CreateRsvpRequest,
   CreateTeamMemberRequest,
@@ -40,9 +41,11 @@ import type {
   LoginRequest,
   LoginResponse,
   NewsPost,
+  NewsletterCampaign,
   NewsletterRequest,
   Resource,
   Rsvp,
+  Subscriber,
   SuccessResponse,
   TeamMember,
   UploadUrlRequest,
@@ -2817,6 +2820,584 @@ export const useSubscribeNewsletter = <
   TContext
 > => {
   return useMutation(getSubscribeNewsletterMutationOptions(options));
+};
+
+/**
+ * @summary List all newsletter subscribers (admin)
+ */
+export const getListSubscribersUrl = () => {
+  return `/api/newsletter/subscribers`;
+};
+
+export const listSubscribers = async (
+  options?: RequestInit,
+): Promise<Subscriber[]> => {
+  return customFetch<Subscriber[]>(getListSubscribersUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListSubscribersQueryKey = () => {
+  return [`/api/newsletter/subscribers`] as const;
+};
+
+export const getListSubscribersQueryOptions = <
+  TData = Awaited<ReturnType<typeof listSubscribers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSubscribers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListSubscribersQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listSubscribers>>> = ({
+    signal,
+  }) => listSubscribers({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listSubscribers>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListSubscribersQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listSubscribers>>
+>;
+export type ListSubscribersQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all newsletter subscribers (admin)
+ */
+
+export function useListSubscribers<
+  TData = Awaited<ReturnType<typeof listSubscribers>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listSubscribers>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListSubscribersQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Remove a subscriber (admin)
+ */
+export const getDeleteSubscriberUrl = (id: number) => {
+  return `/api/newsletter/subscribers/${id}`;
+};
+
+export const deleteSubscriber = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteSubscriberUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteSubscriberMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSubscriber>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteSubscriber>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteSubscriber"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteSubscriber>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteSubscriber(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteSubscriberMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteSubscriber>>
+>;
+
+export type DeleteSubscriberMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Remove a subscriber (admin)
+ */
+export const useDeleteSubscriber = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteSubscriber>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteSubscriber>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteSubscriberMutationOptions(options));
+};
+
+/**
+ * @summary List all newsletter campaigns (admin)
+ */
+export const getListNewsletterCampaignsUrl = () => {
+  return `/api/newsletter/campaigns`;
+};
+
+export const listNewsletterCampaigns = async (
+  options?: RequestInit,
+): Promise<NewsletterCampaign[]> => {
+  return customFetch<NewsletterCampaign[]>(getListNewsletterCampaignsUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListNewsletterCampaignsQueryKey = () => {
+  return [`/api/newsletter/campaigns`] as const;
+};
+
+export const getListNewsletterCampaignsQueryOptions = <
+  TData = Awaited<ReturnType<typeof listNewsletterCampaigns>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNewsletterCampaigns>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey =
+    queryOptions?.queryKey ?? getListNewsletterCampaignsQueryKey();
+
+  const queryFn: QueryFunction<
+    Awaited<ReturnType<typeof listNewsletterCampaigns>>
+  > = ({ signal }) => listNewsletterCampaigns({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listNewsletterCampaigns>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListNewsletterCampaignsQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listNewsletterCampaigns>>
+>;
+export type ListNewsletterCampaignsQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all newsletter campaigns (admin)
+ */
+
+export function useListNewsletterCampaigns<
+  TData = Awaited<ReturnType<typeof listNewsletterCampaigns>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listNewsletterCampaigns>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListNewsletterCampaignsQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a newsletter campaign (admin)
+ */
+export const getCreateNewsletterCampaignUrl = () => {
+  return `/api/newsletter/campaigns`;
+};
+
+export const createNewsletterCampaign = async (
+  createNewsletterCampaignRequest: CreateNewsletterCampaignRequest,
+  options?: RequestInit,
+): Promise<NewsletterCampaign> => {
+  return customFetch<NewsletterCampaign>(getCreateNewsletterCampaignUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createNewsletterCampaignRequest),
+  });
+};
+
+export const getCreateNewsletterCampaignMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNewsletterCampaign>>,
+    TError,
+    { data: BodyType<CreateNewsletterCampaignRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createNewsletterCampaign>>,
+  TError,
+  { data: BodyType<CreateNewsletterCampaignRequest> },
+  TContext
+> => {
+  const mutationKey = ["createNewsletterCampaign"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createNewsletterCampaign>>,
+    { data: BodyType<CreateNewsletterCampaignRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createNewsletterCampaign(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateNewsletterCampaignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createNewsletterCampaign>>
+>;
+export type CreateNewsletterCampaignMutationBody =
+  BodyType<CreateNewsletterCampaignRequest>;
+export type CreateNewsletterCampaignMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a newsletter campaign (admin)
+ */
+export const useCreateNewsletterCampaign = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createNewsletterCampaign>>,
+    TError,
+    { data: BodyType<CreateNewsletterCampaignRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createNewsletterCampaign>>,
+  TError,
+  { data: BodyType<CreateNewsletterCampaignRequest> },
+  TContext
+> => {
+  return useMutation(getCreateNewsletterCampaignMutationOptions(options));
+};
+
+/**
+ * @summary Update a newsletter campaign (admin)
+ */
+export const getUpdateNewsletterCampaignUrl = (id: number) => {
+  return `/api/newsletter/campaigns/${id}`;
+};
+
+export const updateNewsletterCampaign = async (
+  id: number,
+  createNewsletterCampaignRequest: CreateNewsletterCampaignRequest,
+  options?: RequestInit,
+): Promise<NewsletterCampaign> => {
+  return customFetch<NewsletterCampaign>(getUpdateNewsletterCampaignUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createNewsletterCampaignRequest),
+  });
+};
+
+export const getUpdateNewsletterCampaignMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateNewsletterCampaign>>,
+    TError,
+    { id: number; data: BodyType<CreateNewsletterCampaignRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateNewsletterCampaign>>,
+  TError,
+  { id: number; data: BodyType<CreateNewsletterCampaignRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateNewsletterCampaign"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateNewsletterCampaign>>,
+    { id: number; data: BodyType<CreateNewsletterCampaignRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateNewsletterCampaign(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateNewsletterCampaignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateNewsletterCampaign>>
+>;
+export type UpdateNewsletterCampaignMutationBody =
+  BodyType<CreateNewsletterCampaignRequest>;
+export type UpdateNewsletterCampaignMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a newsletter campaign (admin)
+ */
+export const useUpdateNewsletterCampaign = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateNewsletterCampaign>>,
+    TError,
+    { id: number; data: BodyType<CreateNewsletterCampaignRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateNewsletterCampaign>>,
+  TError,
+  { id: number; data: BodyType<CreateNewsletterCampaignRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateNewsletterCampaignMutationOptions(options));
+};
+
+/**
+ * @summary Delete a newsletter campaign (admin)
+ */
+export const getDeleteNewsletterCampaignUrl = (id: number) => {
+  return `/api/newsletter/campaigns/${id}`;
+};
+
+export const deleteNewsletterCampaign = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteNewsletterCampaignUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteNewsletterCampaignMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteNewsletterCampaign>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteNewsletterCampaign>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteNewsletterCampaign"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteNewsletterCampaign>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteNewsletterCampaign(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteNewsletterCampaignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteNewsletterCampaign>>
+>;
+
+export type DeleteNewsletterCampaignMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a newsletter campaign (admin)
+ */
+export const useDeleteNewsletterCampaign = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteNewsletterCampaign>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteNewsletterCampaign>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteNewsletterCampaignMutationOptions(options));
+};
+
+/**
+ * @summary Mark a campaign as sent (admin)
+ */
+export const getSendNewsletterCampaignUrl = (id: number) => {
+  return `/api/newsletter/campaigns/${id}/send`;
+};
+
+export const sendNewsletterCampaign = async (
+  id: number,
+  options?: RequestInit,
+): Promise<NewsletterCampaign> => {
+  return customFetch<NewsletterCampaign>(getSendNewsletterCampaignUrl(id), {
+    ...options,
+    method: "POST",
+  });
+};
+
+export const getSendNewsletterCampaignMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendNewsletterCampaign>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof sendNewsletterCampaign>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["sendNewsletterCampaign"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof sendNewsletterCampaign>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return sendNewsletterCampaign(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type SendNewsletterCampaignMutationResult = NonNullable<
+  Awaited<ReturnType<typeof sendNewsletterCampaign>>
+>;
+
+export type SendNewsletterCampaignMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Mark a campaign as sent (admin)
+ */
+export const useSendNewsletterCampaign = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof sendNewsletterCampaign>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof sendNewsletterCampaign>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getSendNewsletterCampaignMutationOptions(options));
 };
 
 /**

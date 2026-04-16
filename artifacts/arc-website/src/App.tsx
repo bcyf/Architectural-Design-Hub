@@ -26,6 +26,7 @@ import AdminResources from "@/pages/admin/ResourcesManager";
 import AdminJobs from "@/pages/admin/JobsManager";
 import AdminContacts from "@/pages/admin/ContactsManager";
 import AdminSettings from "@/pages/admin/Settings";
+import AdminNewsletter from "@/pages/admin/NewsletterManager";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -60,6 +61,7 @@ function Router() {
       <Route path="/admin/jobs" component={() => <AdminPage><AdminJobs /></AdminPage>} />
       <Route path="/admin/contacts" component={() => <AdminPage><AdminContacts /></AdminPage>} />
       <Route path="/admin/settings" component={() => <AdminPage><AdminSettings /></AdminPage>} />
+      <Route path="/admin/newsletter" component={() => <AdminPage><AdminNewsletter /></AdminPage>} />
 
       {/* Public Routes */}
       <Route path="/" component={Home} />

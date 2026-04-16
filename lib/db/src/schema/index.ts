@@ -7,3 +7,4 @@ export * from "./jobs";
 export * from "./contact";
 export * from "./settings";
 export * from "./rsvps";
+export * from "./newsletter-campaigns";
