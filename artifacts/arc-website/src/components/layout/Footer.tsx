@@ -41,9 +41,11 @@ export function Footer() {
           {/* Brand */}
           <div className="space-y-6">
             <Link href="/" className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-primary flex items-center justify-center">
-                <span className="text-background font-display font-bold leading-none">A</span>
-              </div>
+              <img
+                src={`${import.meta.env.BASE_URL}images/logo.jpg`}
+                alt="ARC Logo"
+                className="h-10 w-auto object-contain brightness-0 invert"
+              />
               <span className="font-display font-bold text-lg tracking-tight">
                 ARC Association
               </span>

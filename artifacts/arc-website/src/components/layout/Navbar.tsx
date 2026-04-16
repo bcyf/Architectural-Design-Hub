@@ -43,9 +43,11 @@ export function Navbar() {
           
           {/* Logo */}
           <Link href="/" className="group flex items-center gap-2 z-50 relative">
-            <div className="w-8 h-8 bg-foreground flex items-center justify-center group-hover:bg-primary transition-colors duration-300">
-              <span className="text-background font-display font-bold leading-none">A</span>
-            </div>
+            <img
+              src={`${import.meta.env.BASE_URL}images/logo.jpg`}
+              alt="ARC Logo"
+              className="h-10 w-auto object-contain"
+            />
             <span className="font-display font-bold text-lg tracking-tight group-hover:text-primary transition-colors duration-300">
               Architecture Student Association FBC
             </span>
