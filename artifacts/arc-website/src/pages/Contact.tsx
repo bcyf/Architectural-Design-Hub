@@ -73,7 +73,7 @@ export default function Contact() {
                 </div>
                 <div className="flex items-center gap-3">
                   <Mail className="text-primary shrink-0" size={20} />
-                  <p>info@arc-student.org</p>
+                  <p>archstudentassociationfbc@gmail.com</p>
                 </div>
               </div>
             </div>

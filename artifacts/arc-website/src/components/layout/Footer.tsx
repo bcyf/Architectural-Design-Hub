@@ -60,7 +60,7 @@ export function Footer() {
               <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center hover:bg-primary hover:border-primary transition-colors">
                 <Linkedin size={18} />
               </a>
-              <a href="mailto:contact@arc-student.org" className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center hover:bg-primary hover:border-primary transition-colors">
+              <a href="mailto:archstudentassociationfbc@gmail.com" className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center hover:bg-primary hover:border-primary transition-colors">
                 <Mail size={18} />
               </a>
             </div>
@@ -88,7 +88,7 @@ export function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <Mail size={18} className="text-primary shrink-0" />
-                <span>info@arc-student.org</span>
+                <span>archstudentassociationfbc@gmail.com</span>
               </li>
             </ul>
           </div>
