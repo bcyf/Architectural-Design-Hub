@@ -83,7 +83,7 @@ export default function Home() {
             className="max-w-3xl"
           >
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-primary text-primary-foreground font-medium text-sm mb-6 uppercase tracking-widest">
-              <span>Est. 1998</span>
+              <span>Est. 2022</span>
             </div>
             <h1 className="text-5xl sm:text-6xl md:text-7xl lg:text-8xl font-display font-bold leading-tight mb-6 text-foreground">
               Designing <br/>
