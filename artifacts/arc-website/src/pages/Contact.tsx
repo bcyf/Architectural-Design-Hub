@@ -67,7 +67,7 @@ export default function Contact() {
                   <MapPin className="text-primary shrink-0 mt-1" size={20} />
                   <div>
                     <p className="font-medium text-foreground">Architecture Building</p>
-                    <p>Room 402, Main Campus</p>
+                    <p>Tree Planting University Campus</p>
                     <p>Office Hours: Mon-Thu, 10am - 4pm</p>
                   </div>
                 </div>
