@@ -40,11 +40,11 @@ export function Footer() {
           
           {/* Brand */}
           <div className="space-y-6">
-            <Link href="/" className="flex items-center gap-2">
+            <Link href="/" className="flex flex-col items-start gap-4">
               <img
                 src={`${import.meta.env.BASE_URL}images/logo.png`}
-                alt="ARC Logo"
-                className="h-10 w-auto object-contain brightness-0 invert"
+                alt="Architecture Students Association FBC Logo"
+                className="h-28 w-auto object-contain bg-white p-2"
               />
               <span className="font-display font-bold text-lg tracking-tight">
                 ARC Association
