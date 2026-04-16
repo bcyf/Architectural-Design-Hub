@@ -44,7 +44,7 @@ export function Footer() {
               <img
                 src={`${import.meta.env.BASE_URL}images/logo.png`}
                 alt="Architecture Students Association FBC Logo"
-                className="h-16 w-auto object-contain bg-white p-1.5"
+                className="h-12 w-auto object-contain bg-white p-1"
               />
               <span className="font-display font-bold text-lg tracking-tight">
                 ASA Organisation
