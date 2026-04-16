@@ -30,6 +30,8 @@ import AdminNewsletter from "@/pages/admin/NewsletterManager";
 import AdminQuotes from "@/pages/admin/QuotesManager";
 import AdminFaq from "@/pages/admin/FaqManager";
 import FAQ from "@/pages/FAQ";
+import Privacy from "@/pages/Privacy";
+import Terms from "@/pages/Terms";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -77,6 +79,8 @@ function Router() {
       <Route path="/blog" component={Blog} />
       <Route path="/contact" component={Contact} />
       <Route path="/faq" component={FAQ} />
+      <Route path="/privacy" component={Privacy} />
+      <Route path="/terms" component={Terms} />
       <Route component={NotFound} />
     </Switch>
   );
