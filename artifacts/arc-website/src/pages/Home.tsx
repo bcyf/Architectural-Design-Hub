@@ -5,8 +5,9 @@ import { ArrowRight, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { EventCard } from "@/components/shared/EventCard";
+import { RsvpModal } from "@/components/shared/RsvpModal";
 import { SectionHeader } from "@/components/shared/SectionHeader";
-import { useListEvents, useListNews } from "@workspace/api-client-react";
+import { useListEvents, useListNews, Event } from "@workspace/api-client-react";
 
 // Mock data fallbacks to ensure beautiful UI even if API returns empty
 const MOCK_EVENTS = [
@@ -24,6 +25,7 @@ const MOCK_EVENTS = [
 export default function Home() {
   const { data: eventsData, isLoading: eventsLoading } = useListEvents({ upcoming: true, limit: 3 });
   const { data: newsData, isLoading: newsLoading } = useListNews({ limit: 3 });
+  const [rsvpEvent, setRsvpEvent] = useState<Event | null>(null);
   
   const events = eventsData?.length ? eventsData : MOCK_EVENTS;
   
@@ -156,7 +158,7 @@ export default function Home() {
                   viewport={{ once: true }}
                   transition={{ delay: i * 0.1 }}
                 >
-                  <EventCard event={event} />
+                  <EventCard event={event} onRsvp={(e) => setRsvpEvent(e as Event)} />
                 </motion.div>
               ))
             )}
@@ -241,6 +243,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <RsvpModal event={rsvpEvent} onClose={() => setRsvpEvent(null)} />
     </PageWrapper>
   );
 }
