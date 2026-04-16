@@ -9,3 +9,4 @@ export * from "./settings";
 export * from "./rsvps";
 export * from "./newsletter-campaigns";
 export * from "./quotes";
+export * from "./faqs";

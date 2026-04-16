@@ -28,6 +28,8 @@ import AdminContacts from "@/pages/admin/ContactsManager";
 import AdminSettings from "@/pages/admin/Settings";
 import AdminNewsletter from "@/pages/admin/NewsletterManager";
 import AdminQuotes from "@/pages/admin/QuotesManager";
+import AdminFaq from "@/pages/admin/FaqManager";
+import FAQ from "@/pages/FAQ";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -64,6 +66,7 @@ function Router() {
       <Route path="/admin/settings" component={() => <AdminPage><AdminSettings /></AdminPage>} />
       <Route path="/admin/newsletter" component={() => <AdminPage><AdminNewsletter /></AdminPage>} />
       <Route path="/admin/quotes" component={() => <AdminPage><AdminQuotes /></AdminPage>} />
+      <Route path="/admin/faq" component={() => <AdminPage><AdminFaq /></AdminPage>} />
 
       {/* Public Routes */}
       <Route path="/" component={Home} />
@@ -73,6 +76,7 @@ function Router() {
       <Route path="/gallery" component={Gallery} />
       <Route path="/blog" component={Blog} />
       <Route path="/contact" component={Contact} />
+      <Route path="/faq" component={FAQ} />
       <Route component={NotFound} />
     </Switch>
   );

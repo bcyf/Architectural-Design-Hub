@@ -302,6 +302,22 @@ export interface NewsletterCampaign {
   updatedAt: string;
 }
 
+export interface Faq {
+  id: number;
+  question: string;
+  answer: string;
+  order: number;
+  isPublished: boolean;
+  createdAt: string;
+}
+
+export interface CreateFaqRequest {
+  question: string;
+  answer: string;
+  order?: number;
+  isPublished?: boolean;
+}
+
 export interface Quote {
   id: number;
   text: string;

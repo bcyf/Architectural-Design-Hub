@@ -12,6 +12,7 @@ import contactRouter from "./contact";
 import adminRouter from "./admin";
 import newsletterRouter from "./newsletter";
 import quotesRouter from "./quotes";
+import faqsRouter from "./faqs";
 
 const router: IRouter = Router();
 
@@ -28,5 +29,6 @@ router.use(contactRouter);
 router.use(adminRouter);
 router.use(newsletterRouter);
 router.use(quotesRouter);
+router.use(faqsRouter);
 
 export default router;

@@ -29,6 +29,8 @@ tags:
     description: Newsletter and subscriber management
   - name: quotes
     description: Homepage inspirational quotes
+  - name: faqs
+    description: Frequently asked questions
 
 paths:
   /healthz:
@@ -649,6 +651,99 @@ paths:
       responses:
         "200":
           description: Subscribed
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /faqs:
+    get:
+      operationId: listFaqs
+      tags: [faqs]
+      summary: List published FAQs
+      responses:
+        "200":
+          description: List of published FAQs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Faq"
+    post:
+      operationId: createFaq
+      tags: [faqs]
+      summary: Create a FAQ (admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFaqRequest"
+      responses:
+        "201":
+          description: Created FAQ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Faq"
+
+  /faqs/all:
+    get:
+      operationId: listFaqsAll
+      tags: [faqs]
+      summary: List all FAQs including unpublished (admin)
+      security: [{ bearerAuth: [] }]
+      responses:
+        "200":
+          description: All FAQs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Faq"
+
+  /faqs/{id}:
+    put:
+      operationId: updateFaq
+      tags: [faqs]
+      summary: Update a FAQ (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateFaqRequest"
+      responses:
+        "200":
+          description: Updated FAQ
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Faq"
+    delete:
+      operationId: deleteFaq
+      tags: [faqs]
+      summary: Delete a FAQ (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
           content:
             application/json:
               schema:
@@ -1557,6 +1652,44 @@ components:
         - recipientCount
         - createdAt
         - updatedAt
+
+    Faq:
+      type: object
+      properties:
+        id:
+          type: number
+        question:
+          type: string
+        answer:
+          type: string
+        order:
+          type: number
+        isPublished:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - question
+        - answer
+        - order
+        - isPublished
+        - createdAt
+
+    CreateFaqRequest:
+      type: object
+      properties:
+        question:
+          type: string
+        answer:
+          type: string
+        order:
+          type: number
+        isPublished:
+          type: boolean
+      required:
+        - question
+        - answer
 
     Quote:
       type: object

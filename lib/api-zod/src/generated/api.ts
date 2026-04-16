@@ -648,6 +648,77 @@ export const SubscribeNewsletterResponse = zod.object({
 });
 
 /**
+ * @summary List published FAQs
+ */
+export const ListFaqsResponseItem = zod.object({
+  id: zod.number(),
+  question: zod.string(),
+  answer: zod.string(),
+  order: zod.number(),
+  isPublished: zod.boolean(),
+  createdAt: zod.string(),
+});
+export const ListFaqsResponse = zod.array(ListFaqsResponseItem);
+
+/**
+ * @summary Create a FAQ (admin)
+ */
+export const CreateFaqBody = zod.object({
+  question: zod.string(),
+  answer: zod.string(),
+  order: zod.number().optional(),
+  isPublished: zod.boolean().optional(),
+});
+
+/**
+ * @summary List all FAQs including unpublished (admin)
+ */
+export const ListFaqsAllResponseItem = zod.object({
+  id: zod.number(),
+  question: zod.string(),
+  answer: zod.string(),
+  order: zod.number(),
+  isPublished: zod.boolean(),
+  createdAt: zod.string(),
+});
+export const ListFaqsAllResponse = zod.array(ListFaqsAllResponseItem);
+
+/**
+ * @summary Update a FAQ (admin)
+ */
+export const UpdateFaqParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateFaqBody = zod.object({
+  question: zod.string(),
+  answer: zod.string(),
+  order: zod.number().optional(),
+  isPublished: zod.boolean().optional(),
+});
+
+export const UpdateFaqResponse = zod.object({
+  id: zod.number(),
+  question: zod.string(),
+  answer: zod.string(),
+  order: zod.number(),
+  isPublished: zod.boolean(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Delete a FAQ (admin)
+ */
+export const DeleteFaqParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteFaqResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
+});
+
+/**
  * @summary List all quotes
  */
 export const ListQuotesResponseItem = zod.object({
