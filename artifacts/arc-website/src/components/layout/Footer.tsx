@@ -40,7 +40,7 @@ export function Footer() {
           
           {/* Brand */}
           <div className="space-y-6">
-            <Link href="/" className="flex flex-col items-start gap-4">
+            <Link href="/" className="flex flex-row items-center gap-3">
               <img
                 src={`${import.meta.env.BASE_URL}images/logo.png`}
                 alt="Architecture Students Association FBC Logo"
