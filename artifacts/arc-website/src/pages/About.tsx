@@ -161,11 +161,28 @@ export default function About() {
                           alt={member.name}
                           className="w-full h-full object-cover filter grayscale group-hover:grayscale-0 transition-all duration-500"
                         />
+                        <div className="absolute inset-0 bg-primary/80 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-3">
+                          {member.email && (
+                            <a href={`mailto:${member.email}`} className="w-9 h-9 bg-background text-foreground flex items-center justify-center hover:bg-foreground hover:text-background transition-colors">
+                              <Mail size={16} />
+                            </a>
+                          )}
+                          {member.instagram && (
+                            <a href={member.instagram} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-background text-foreground flex items-center justify-center hover:bg-foreground hover:text-background transition-colors">
+                              <Instagram size={16} />
+                            </a>
+                          )}
+                          {member.linkedin && (
+                            <a href={member.linkedin} target="_blank" rel="noopener noreferrer" className="w-9 h-9 bg-background text-foreground flex items-center justify-center hover:bg-foreground hover:text-background transition-colors">
+                              <Linkedin size={16} />
+                            </a>
+                          )}
+                        </div>
                       </div>
                       <h4 className="font-semibold text-sm">{member.name}</h4>
-                      <p className="text-primary text-xs font-medium mt-0.5 mb-2">{member.position}</p>
+                      <p className="text-primary text-xs font-medium mt-0.5">{member.position}{member.year ? ` • ${member.year}` : ""}</p>
                       {member.bio && (
-                        <p className="text-muted-foreground text-xs leading-relaxed mb-1">{member.bio}</p>
+                        <p className="text-muted-foreground text-xs leading-relaxed mt-2 mb-1">{member.bio}</p>
                       )}
                       {member.interests && (
                         <p className="text-xs text-foreground/60 uppercase tracking-wider">Interests: {member.interests}</p>
