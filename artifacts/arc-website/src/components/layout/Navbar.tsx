@@ -48,7 +48,7 @@ export function Navbar() {
               alt="ARC Logo"
               className="h-10 w-auto object-contain"
             />
-            <span className="font-display font-bold text-lg tracking-tight group-hover:text-primary transition-colors duration-300">
+            <span className="font-display font-bold text-sm tracking-tight group-hover:text-primary transition-colors duration-300">
               Architecture Student Association FBC
             </span>
           </Link>
