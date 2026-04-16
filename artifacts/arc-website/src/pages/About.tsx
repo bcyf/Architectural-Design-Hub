@@ -165,7 +165,10 @@ export default function About() {
                       <h4 className="font-semibold text-sm">{member.name}</h4>
                       <p className="text-primary text-xs font-medium mt-0.5 mb-2">{member.position}</p>
                       {member.bio && (
-                        <p className="text-muted-foreground text-xs leading-relaxed">{member.bio}</p>
+                        <p className="text-muted-foreground text-xs leading-relaxed mb-1">{member.bio}</p>
+                      )}
+                      {member.interests && (
+                        <p className="text-xs text-foreground/60 uppercase tracking-wider">Interests: {member.interests}</p>
                       )}
                     </div>
                   ))}
