@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 
 interface EventCardProps {
   event: Event;
+  onRsvp?: (event: Event) => void;
 }
 
 const typeColors: Record<string, string> = {
@@ -18,7 +19,7 @@ const typeColors: Record<string, string> = {
   other: "bg-gray-100 text-gray-800 border-gray-200",
 };
 
-export function EventCard({ event }: EventCardProps) {
+export function EventCard({ event, onRsvp }: EventCardProps) {
   const dateObj = new Date(event.date);
   const colorClass = typeColors[event.type] || typeColors.other;
 
@@ -76,7 +77,12 @@ export function EventCard({ event }: EventCardProps) {
             <Users size={14} />
             <span>{event.rsvpCount} Attending</span>
           </div>
-          <Button variant="outline" className="rounded-none border-foreground hover:bg-foreground hover:text-background" size="sm">
+          <Button
+            variant="outline"
+            className="rounded-none border-foreground hover:bg-foreground hover:text-background"
+            size="sm"
+            onClick={() => onRsvp?.(event)}
+          >
             RSVP Now
           </Button>
         </div>

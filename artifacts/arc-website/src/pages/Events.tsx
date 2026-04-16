@@ -2,18 +2,19 @@ import { useState } from "react";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { SectionHeader } from "@/components/shared/SectionHeader";
 import { EventCard } from "@/components/shared/EventCard";
-import { useListEvents } from "@workspace/api-client-react";
-import { Calendar as CalendarIcon, List } from "lucide-react";
+import { RsvpModal } from "@/components/shared/RsvpModal";
+import { useListEvents, Event } from "@workspace/api-client-react";
+import { Calendar as CalendarIcon, List, Users } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 export default function Events() {
   const [view, setView] = useState<"grid" | "list">("grid");
+  const [rsvpEvent, setRsvpEvent] = useState<Event | null>(null);
   const { data: events, isLoading } = useListEvents();
 
-  // Sort events: upcoming first, then past
-  const sortedEvents = events?.sort((a: any, b: any) => {
-    return new Date(b.date).getTime() - new Date(a.date).getTime();
-  });
+  const sortedEvents = events?.slice().sort((a: any, b: any) =>
+    new Date(b.date).getTime() - new Date(a.date).getTime()
+  );
 
   return (
     <PageWrapper>
@@ -56,15 +57,26 @@ export default function Events() {
                     <div className="sm:w-1/3 aspect-video sm:aspect-auto sm:h-full bg-muted shrink-0">
                       {event.imageUrl && <img src={event.imageUrl} alt={event.title} className="w-full h-full object-cover" />}
                     </div>
-                    <div className="flex-grow flex flex-col justify-center">
-                      <div className="text-primary font-medium text-sm uppercase tracking-wider mb-2">{event.type}</div>
-                      <h3 className="text-2xl font-display font-bold mb-2">{event.title}</h3>
-                      <p className="text-muted-foreground mb-4">{event.date} • {event.time} • {event.location}</p>
-                      <Button variant="outline" className="w-fit rounded-none">RSVP</Button>
+                    <div className="flex-grow flex flex-col justify-center gap-3">
+                      <div className="text-primary font-medium text-sm uppercase tracking-wider">{event.type}</div>
+                      <h3 className="text-2xl font-display font-bold">{event.title}</h3>
+                      <p className="text-muted-foreground">{event.date} • {event.time} • {event.location}</p>
+                      <div className="flex items-center gap-4">
+                        <Button
+                          variant="outline"
+                          className="w-fit rounded-none"
+                          onClick={() => setRsvpEvent(event)}
+                        >
+                          RSVP
+                        </Button>
+                        <span className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Users size={13} /> {event.rsvpCount} attending
+                        </span>
+                      </div>
                     </div>
                   </>
                 ) : (
-                  <EventCard event={event} />
+                  <EventCard event={event} onRsvp={setRsvpEvent} />
                 )}
               </div>
             ))}
@@ -79,6 +91,8 @@ export default function Events() {
           </div>
         )}
       </div>
+
+      <RsvpModal event={rsvpEvent} onClose={() => setRsvpEvent(null)} />
     </PageWrapper>
   );
 }

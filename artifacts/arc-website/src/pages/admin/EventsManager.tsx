@@ -6,6 +6,7 @@ import * as z from "zod";
 import { 
   useListEvents, getListEventsQueryKey, 
   useCreateEvent, useUpdateEvent, useDeleteEvent,
+  useListEventRsvps,
   Event
 } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
@@ -17,10 +18,11 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
-import { Plus, Edit, Trash2, Calendar, MapPin } from "lucide-react";
+import { Plus, Edit, Trash2, Calendar, MapPin, Users, Mail } from "lucide-react";
 import { ImageUploader } from "@/components/admin/ImageUploader";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+import { format } from "date-fns";
 
 const eventSchema = z.object({
   title: z.string().min(1, "Title is required"),
@@ -36,6 +38,75 @@ const eventSchema = z.object({
 
 type FormValues = z.infer<typeof eventSchema>;
 
+function RsvpListDialog({ event, onClose }: { event: Event | null; onClose: () => void }) {
+  const { data: rsvps, isLoading } = useListEventRsvps(event?.id ?? 0, {
+    query: { enabled: !!event },
+  });
+
+  return (
+    <Dialog open={!!event} onOpenChange={(open) => !open && onClose()}>
+      <DialogContent className="max-w-2xl max-h-[80vh] flex flex-col">
+        <DialogHeader>
+          <DialogTitle className="font-display">
+            RSVPs — {event?.title}
+          </DialogTitle>
+        </DialogHeader>
+
+        <div className="flex items-center gap-3 text-sm text-muted-foreground pb-2 border-b border-border">
+          <span className="flex items-center gap-1.5"><Calendar size={14} /> {event?.date}</span>
+          <span className="flex items-center gap-1.5"><MapPin size={14} /> {event?.location}</span>
+          <span className="flex items-center gap-1.5 ml-auto font-semibold text-foreground">
+            <Users size={14} className="text-primary" />
+            {rsvps?.length ?? event?.rsvpCount ?? 0} registered
+          </span>
+        </div>
+
+        <div className="overflow-y-auto flex-1">
+          {isLoading ? (
+            <div className="py-10 text-center text-muted-foreground">Loading…</div>
+          ) : !rsvps?.length ? (
+            <div className="py-10 text-center text-muted-foreground">
+              <Users className="w-10 h-10 mx-auto mb-3 opacity-40" />
+              <p>No RSVPs yet for this event.</p>
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-muted/50">
+                  <TableHead>#</TableHead>
+                  <TableHead>Name</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Registered At</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {rsvps.map((rsvp, i) => (
+                  <TableRow key={rsvp.id}>
+                    <TableCell className="text-muted-foreground font-mono text-xs">{i + 1}</TableCell>
+                    <TableCell className="font-medium">{rsvp.name}</TableCell>
+                    <TableCell>
+                      <a href={`mailto:${rsvp.email}`} className="flex items-center gap-1.5 text-primary hover:underline text-sm">
+                        <Mail size={13} /> {rsvp.email}
+                      </a>
+                    </TableCell>
+                    <TableCell className="text-muted-foreground text-sm">
+                      {format(new Date(rsvp.createdAt), "MMM d, yyyy · h:mm a")}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </div>
+
+        <div className="pt-3 border-t border-border">
+          <Button variant="outline" className="w-full" onClick={onClose}>Close</Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
 export default function EventsManager() {
   const { data: events, isLoading } = useListEvents();
   const queryClient = useQueryClient();
@@ -43,7 +114,7 @@ export default function EventsManager() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingEvent, setEditingEvent] = useState<Event | null>(null);
-  
+  const [rsvpViewEvent, setRsvpViewEvent] = useState<Event | null>(null);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
 
   const createMutation = useCreateEvent();
@@ -142,14 +213,15 @@ export default function EventsManager() {
               <TableHead>Date & Time</TableHead>
               <TableHead>Location</TableHead>
               <TableHead>Status</TableHead>
+              <TableHead>RSVPs</TableHead>
               <TableHead className="text-right">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8">Loading...</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-8">Loading...</TableCell></TableRow>
             ) : events?.length === 0 ? (
-              <TableRow><TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No events found.</TableCell></TableRow>
+              <TableRow><TableCell colSpan={6} className="text-center py-8 text-muted-foreground">No events found.</TableCell></TableRow>
             ) : (
               events?.map((event) => (
                 <TableRow key={event.id}>
@@ -177,6 +249,17 @@ export default function EventsManager() {
                       <Badge variant="secondary">Past</Badge>
                     )}
                   </TableCell>
+                  <TableCell>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="gap-1.5 text-sm font-semibold hover:text-primary"
+                      onClick={() => setRsvpViewEvent(event)}
+                    >
+                      <Users className="w-3.5 h-3.5" />
+                      {event.rsvpCount}
+                    </Button>
+                  </TableCell>
                   <TableCell className="text-right">
                     <div className="flex justify-end gap-2">
                       <Button variant="ghost" size="icon" onClick={() => handleOpenEdit(event)}>
@@ -194,6 +277,7 @@ export default function EventsManager() {
         </Table>
       </div>
 
+      {/* Add / Edit dialog */}
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
         <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
@@ -226,7 +310,7 @@ export default function EventsManager() {
                 <FormField control={form.control} name="type" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl><SelectTrigger><SelectValue placeholder="Select type" /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="workshop">Workshop</SelectItem>
@@ -252,20 +336,15 @@ export default function EventsManager() {
                 </FormItem>
               )} />
 
-              <div className="grid grid-cols-2 gap-4">
-                <FormField control={form.control} name="rsvpCount" render={({ field }) => (
-                  <FormItem><FormLabel>Current RSVPs</FormLabel><FormControl><Input type="number" {...field} /></FormControl><FormMessage /></FormItem>
-                )} />
-                <FormField control={form.control} name="isUpcoming" render={({ field }) => (
-                  <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm mt-8">
-                    <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                    <div className="space-y-1 leading-none">
-                      <FormLabel>Is Upcoming?</FormLabel>
-                      <p className="text-[10px] text-muted-foreground">Show in upcoming events list</p>
-                    </div>
-                  </FormItem>
-                )} />
-              </div>
+              <FormField control={form.control} name="isUpcoming" render={({ field }) => (
+                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4 shadow-sm">
+                  <FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+                  <div className="space-y-1 leading-none">
+                    <FormLabel>Is Upcoming?</FormLabel>
+                    <p className="text-[10px] text-muted-foreground">Show in upcoming events list</p>
+                  </div>
+                </FormItem>
+              )} />
 
               <div className="flex justify-end gap-3 pt-4 border-t border-border">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
@@ -277,6 +356,9 @@ export default function EventsManager() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* RSVP list dialog */}
+      <RsvpListDialog event={rsvpViewEvent} onClose={() => setRsvpViewEvent(null)} />
 
       <DeleteConfirmDialog 
         open={!!itemToDelete} 
