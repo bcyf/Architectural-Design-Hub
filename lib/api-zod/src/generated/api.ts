@@ -648,6 +648,75 @@ export const SubscribeNewsletterResponse = zod.object({
 });
 
 /**
+ * @summary List all quotes
+ */
+export const ListQuotesResponseItem = zod.object({
+  id: zod.number(),
+  text: zod.string(),
+  author: zod.string(),
+  isActive: zod.boolean(),
+  createdAt: zod.string(),
+});
+export const ListQuotesResponse = zod.array(ListQuotesResponseItem);
+
+/**
+ * @summary Create a new quote (admin)
+ */
+export const CreateQuoteBody = zod.object({
+  text: zod.string(),
+  author: zod.string(),
+  isActive: zod.boolean().optional(),
+});
+
+/**
+ * @summary Update a quote (admin)
+ */
+export const UpdateQuoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const UpdateQuoteBody = zod.object({
+  text: zod.string(),
+  author: zod.string(),
+  isActive: zod.boolean().optional(),
+});
+
+export const UpdateQuoteResponse = zod.object({
+  id: zod.number(),
+  text: zod.string(),
+  author: zod.string(),
+  isActive: zod.boolean(),
+  createdAt: zod.string(),
+});
+
+/**
+ * @summary Delete a quote (admin)
+ */
+export const DeleteQuoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const DeleteQuoteResponse = zod.object({
+  success: zod.boolean(),
+  message: zod.string(),
+});
+
+/**
+ * @summary Set a quote as active on the homepage (admin)
+ */
+export const ActivateQuoteParams = zod.object({
+  id: zod.coerce.number(),
+});
+
+export const ActivateQuoteResponse = zod.object({
+  id: zod.number(),
+  text: zod.string(),
+  author: zod.string(),
+  isActive: zod.boolean(),
+  createdAt: zod.string(),
+});
+
+/**
  * @summary List all newsletter subscribers (admin)
  */
 export const ListSubscribersResponseItem = zod.object({

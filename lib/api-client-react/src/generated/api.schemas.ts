@@ -302,6 +302,20 @@ export interface NewsletterCampaign {
   updatedAt: string;
 }
 
+export interface Quote {
+  id: number;
+  text: string;
+  author: string;
+  isActive: boolean;
+  createdAt: string;
+}
+
+export interface CreateQuoteRequest {
+  text: string;
+  author: string;
+  isActive?: boolean;
+}
+
 export interface CreateNewsletterCampaignRequest {
   title: string;
   subject: string;

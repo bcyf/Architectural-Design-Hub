@@ -8,3 +8,4 @@ export * from "./contact";
 export * from "./settings";
 export * from "./rsvps";
 export * from "./newsletter-campaigns";
+export * from "./quotes";

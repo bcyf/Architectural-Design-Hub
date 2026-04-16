@@ -7,7 +7,7 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { EventCard } from "@/components/shared/EventCard";
 import { RsvpModal } from "@/components/shared/RsvpModal";
 import { SectionHeader } from "@/components/shared/SectionHeader";
-import { useListEvents, useListNews, Event } from "@workspace/api-client-react";
+import { useListEvents, useListNews, useListQuotes, Event } from "@workspace/api-client-react";
 
 // Mock data fallbacks to ensure beautiful UI even if API returns empty
 const MOCK_EVENTS = [
@@ -22,10 +22,18 @@ const MOCK_EVENTS = [
   }
 ];
 
+const FALLBACK_QUOTE = {
+  text: "Architecture should speak of its time and place, but yearn for timelessness.",
+  author: "Frank Gehry",
+};
+
 export default function Home() {
   const { data: eventsData, isLoading: eventsLoading } = useListEvents({ upcoming: true, limit: 3 });
   const { data: newsData, isLoading: newsLoading } = useListNews({ limit: 3 });
+  const { data: quotes } = useListQuotes();
   const [rsvpEvent, setRsvpEvent] = useState<Event | null>(null);
+
+  const activeQuote = quotes?.find(q => q.isActive) ?? (quotes?.length ? quotes[0] : null);
   
   const events = eventsData?.length ? eventsData : MOCK_EVENTS;
   
@@ -176,9 +184,11 @@ export default function Home() {
         <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
           <span className="text-6xl text-primary font-display leading-none block mb-4">"</span>
           <blockquote className="text-2xl md:text-4xl font-display font-medium leading-tight mb-8">
-            Architecture should speak of its time and place, but yearn for timelessness.
+            {activeQuote?.text ?? FALLBACK_QUOTE.text}
           </blockquote>
-          <cite className="text-muted-foreground uppercase tracking-widest font-medium">— Frank Gehry</cite>
+          <cite className="text-muted-foreground uppercase tracking-widest font-medium">
+            — {activeQuote?.author ?? FALLBACK_QUOTE.author}
+          </cite>
         </div>
       </section>
 

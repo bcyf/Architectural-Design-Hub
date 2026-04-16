@@ -26,6 +26,7 @@ import type {
   CreateJobRequest,
   CreateNewsPostRequest,
   CreateNewsletterCampaignRequest,
+  CreateQuoteRequest,
   CreateResourceRequest,
   CreateRsvpRequest,
   CreateTeamMemberRequest,
@@ -43,6 +44,7 @@ import type {
   NewsPost,
   NewsletterCampaign,
   NewsletterRequest,
+  Quote,
   Resource,
   Rsvp,
   Subscriber,
@@ -2820,6 +2822,420 @@ export const useSubscribeNewsletter = <
   TContext
 > => {
   return useMutation(getSubscribeNewsletterMutationOptions(options));
+};
+
+/**
+ * @summary List all quotes
+ */
+export const getListQuotesUrl = () => {
+  return `/api/quotes`;
+};
+
+export const listQuotes = async (options?: RequestInit): Promise<Quote[]> => {
+  return customFetch<Quote[]>(getListQuotesUrl(), {
+    ...options,
+    method: "GET",
+  });
+};
+
+export const getListQuotesQueryKey = () => {
+  return [`/api/quotes`] as const;
+};
+
+export const getListQuotesQueryOptions = <
+  TData = Awaited<ReturnType<typeof listQuotes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listQuotes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}) => {
+  const { query: queryOptions, request: requestOptions } = options ?? {};
+
+  const queryKey = queryOptions?.queryKey ?? getListQuotesQueryKey();
+
+  const queryFn: QueryFunction<Awaited<ReturnType<typeof listQuotes>>> = ({
+    signal,
+  }) => listQuotes({ signal, ...requestOptions });
+
+  return { queryKey, queryFn, ...queryOptions } as UseQueryOptions<
+    Awaited<ReturnType<typeof listQuotes>>,
+    TError,
+    TData
+  > & { queryKey: QueryKey };
+};
+
+export type ListQuotesQueryResult = NonNullable<
+  Awaited<ReturnType<typeof listQuotes>>
+>;
+export type ListQuotesQueryError = ErrorType<unknown>;
+
+/**
+ * @summary List all quotes
+ */
+
+export function useListQuotes<
+  TData = Awaited<ReturnType<typeof listQuotes>>,
+  TError = ErrorType<unknown>,
+>(options?: {
+  query?: UseQueryOptions<
+    Awaited<ReturnType<typeof listQuotes>>,
+    TError,
+    TData
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+  const queryOptions = getListQuotesQueryOptions(options);
+
+  const query = useQuery(queryOptions) as UseQueryResult<TData, TError> & {
+    queryKey: QueryKey;
+  };
+
+  return { ...query, queryKey: queryOptions.queryKey };
+}
+
+/**
+ * @summary Create a new quote (admin)
+ */
+export const getCreateQuoteUrl = () => {
+  return `/api/quotes`;
+};
+
+export const createQuote = async (
+  createQuoteRequest: CreateQuoteRequest,
+  options?: RequestInit,
+): Promise<Quote> => {
+  return customFetch<Quote>(getCreateQuoteUrl(), {
+    ...options,
+    method: "POST",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createQuoteRequest),
+  });
+};
+
+export const getCreateQuoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createQuote>>,
+    TError,
+    { data: BodyType<CreateQuoteRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof createQuote>>,
+  TError,
+  { data: BodyType<CreateQuoteRequest> },
+  TContext
+> => {
+  const mutationKey = ["createQuote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof createQuote>>,
+    { data: BodyType<CreateQuoteRequest> }
+  > = (props) => {
+    const { data } = props ?? {};
+
+    return createQuote(data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type CreateQuoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof createQuote>>
+>;
+export type CreateQuoteMutationBody = BodyType<CreateQuoteRequest>;
+export type CreateQuoteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Create a new quote (admin)
+ */
+export const useCreateQuote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof createQuote>>,
+    TError,
+    { data: BodyType<CreateQuoteRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof createQuote>>,
+  TError,
+  { data: BodyType<CreateQuoteRequest> },
+  TContext
+> => {
+  return useMutation(getCreateQuoteMutationOptions(options));
+};
+
+/**
+ * @summary Update a quote (admin)
+ */
+export const getUpdateQuoteUrl = (id: number) => {
+  return `/api/quotes/${id}`;
+};
+
+export const updateQuote = async (
+  id: number,
+  createQuoteRequest: CreateQuoteRequest,
+  options?: RequestInit,
+): Promise<Quote> => {
+  return customFetch<Quote>(getUpdateQuoteUrl(id), {
+    ...options,
+    method: "PUT",
+    headers: { "Content-Type": "application/json", ...options?.headers },
+    body: JSON.stringify(createQuoteRequest),
+  });
+};
+
+export const getUpdateQuoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateQuote>>,
+    TError,
+    { id: number; data: BodyType<CreateQuoteRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof updateQuote>>,
+  TError,
+  { id: number; data: BodyType<CreateQuoteRequest> },
+  TContext
+> => {
+  const mutationKey = ["updateQuote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof updateQuote>>,
+    { id: number; data: BodyType<CreateQuoteRequest> }
+  > = (props) => {
+    const { id, data } = props ?? {};
+
+    return updateQuote(id, data, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type UpdateQuoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof updateQuote>>
+>;
+export type UpdateQuoteMutationBody = BodyType<CreateQuoteRequest>;
+export type UpdateQuoteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Update a quote (admin)
+ */
+export const useUpdateQuote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof updateQuote>>,
+    TError,
+    { id: number; data: BodyType<CreateQuoteRequest> },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof updateQuote>>,
+  TError,
+  { id: number; data: BodyType<CreateQuoteRequest> },
+  TContext
+> => {
+  return useMutation(getUpdateQuoteMutationOptions(options));
+};
+
+/**
+ * @summary Delete a quote (admin)
+ */
+export const getDeleteQuoteUrl = (id: number) => {
+  return `/api/quotes/${id}`;
+};
+
+export const deleteQuote = async (
+  id: number,
+  options?: RequestInit,
+): Promise<SuccessResponse> => {
+  return customFetch<SuccessResponse>(getDeleteQuoteUrl(id), {
+    ...options,
+    method: "DELETE",
+  });
+};
+
+export const getDeleteQuoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteQuote>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof deleteQuote>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["deleteQuote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof deleteQuote>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return deleteQuote(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type DeleteQuoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof deleteQuote>>
+>;
+
+export type DeleteQuoteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Delete a quote (admin)
+ */
+export const useDeleteQuote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof deleteQuote>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof deleteQuote>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getDeleteQuoteMutationOptions(options));
+};
+
+/**
+ * @summary Set a quote as active on the homepage (admin)
+ */
+export const getActivateQuoteUrl = (id: number) => {
+  return `/api/quotes/${id}/activate`;
+};
+
+export const activateQuote = async (
+  id: number,
+  options?: RequestInit,
+): Promise<Quote> => {
+  return customFetch<Quote>(getActivateQuoteUrl(id), {
+    ...options,
+    method: "PUT",
+  });
+};
+
+export const getActivateQuoteMutationOptions = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof activateQuote>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationOptions<
+  Awaited<ReturnType<typeof activateQuote>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  const mutationKey = ["activateQuote"];
+  const { mutation: mutationOptions, request: requestOptions } = options
+    ? options.mutation &&
+      "mutationKey" in options.mutation &&
+      options.mutation.mutationKey
+      ? options
+      : { ...options, mutation: { ...options.mutation, mutationKey } }
+    : { mutation: { mutationKey }, request: undefined };
+
+  const mutationFn: MutationFunction<
+    Awaited<ReturnType<typeof activateQuote>>,
+    { id: number }
+  > = (props) => {
+    const { id } = props ?? {};
+
+    return activateQuote(id, requestOptions);
+  };
+
+  return { mutationFn, ...mutationOptions };
+};
+
+export type ActivateQuoteMutationResult = NonNullable<
+  Awaited<ReturnType<typeof activateQuote>>
+>;
+
+export type ActivateQuoteMutationError = ErrorType<unknown>;
+
+/**
+ * @summary Set a quote as active on the homepage (admin)
+ */
+export const useActivateQuote = <
+  TError = ErrorType<unknown>,
+  TContext = unknown,
+>(options?: {
+  mutation?: UseMutationOptions<
+    Awaited<ReturnType<typeof activateQuote>>,
+    TError,
+    { id: number },
+    TContext
+  >;
+  request?: SecondParameter<typeof customFetch>;
+}): UseMutationResult<
+  Awaited<ReturnType<typeof activateQuote>>,
+  TError,
+  { id: number },
+  TContext
+> => {
+  return useMutation(getActivateQuoteMutationOptions(options));
 };
 
 /**

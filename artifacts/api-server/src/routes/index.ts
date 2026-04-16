@@ -11,6 +11,7 @@ import jobsRouter from "./jobs";
 import contactRouter from "./contact";
 import adminRouter from "./admin";
 import newsletterRouter from "./newsletter";
+import quotesRouter from "./quotes";
 
 const router: IRouter = Router();
 
@@ -26,5 +27,6 @@ router.use(jobsRouter);
 router.use(contactRouter);
 router.use(adminRouter);
 router.use(newsletterRouter);
+router.use(quotesRouter);
 
 export default router;

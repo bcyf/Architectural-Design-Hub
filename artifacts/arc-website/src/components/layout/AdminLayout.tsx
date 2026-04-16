@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, Calendar, FileText, Image as ImageIcon, 
-  Users, Folder, Briefcase, Mail, LogOut, Hexagon, Settings, Newspaper
+  Users, Folder, Briefcase, Mail, LogOut, Hexagon, Settings, Newspaper, Quote
 } from "lucide-react";
 import { removeToken } from "@/lib/auth";
 
@@ -15,6 +15,7 @@ const sidebarLinks = [
   { href: "/admin/jobs", label: "Jobs", icon: Briefcase },
   { href: "/admin/contacts", label: "Contacts", icon: Mail },
   { href: "/admin/newsletter", label: "Newsletter", icon: Newspaper },
+  { href: "/admin/quotes", label: "Quotes", icon: Quote },
 ];
 
 const bottomLinks = [

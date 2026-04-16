@@ -27,6 +27,8 @@ tags:
     description: Admin operations
   - name: newsletter
     description: Newsletter and subscriber management
+  - name: quotes
+    description: Homepage inspirational quotes
 
 paths:
   /healthz:
@@ -651,6 +653,103 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SuccessResponse"
+
+  /quotes:
+    get:
+      operationId: listQuotes
+      tags: [quotes]
+      summary: List all quotes
+      responses:
+        "200":
+          description: List of quotes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Quote"
+    post:
+      operationId: createQuote
+      tags: [quotes]
+      summary: Create a new quote (admin)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQuoteRequest"
+      responses:
+        "201":
+          description: Created quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+
+  /quotes/{id}:
+    put:
+      operationId: updateQuote
+      tags: [quotes]
+      summary: Update a quote (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateQuoteRequest"
+      responses:
+        "200":
+          description: Updated quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
+    delete:
+      operationId: deleteQuote
+      tags: [quotes]
+      summary: Delete a quote (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /quotes/{id}/activate:
+    put:
+      operationId: activateQuote
+      tags: [quotes]
+      summary: Set a quote as active on the homepage (admin)
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Activated quote
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Quote"
 
   /newsletter/subscribers:
     get:
@@ -1458,6 +1557,39 @@ components:
         - recipientCount
         - createdAt
         - updatedAt
+
+    Quote:
+      type: object
+      properties:
+        id:
+          type: number
+        text:
+          type: string
+        author:
+          type: string
+        isActive:
+          type: boolean
+        createdAt:
+          type: string
+      required:
+        - id
+        - text
+        - author
+        - isActive
+        - createdAt
+
+    CreateQuoteRequest:
+      type: object
+      properties:
+        text:
+          type: string
+        author:
+          type: string
+        isActive:
+          type: boolean
+      required:
+        - text
+        - author
 
     CreateNewsletterCampaignRequest:
       type: object
