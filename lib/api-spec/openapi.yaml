@@ -1286,6 +1286,11 @@ components:
           type: string
         imageUrl:
           type: string
+        additionalImages:
+          type: array
+          items:
+            type: string
+          nullable: true
         category:
           type: string
           enum: [studio-1st, studio-2nd, studio-3rd, thesis, models, drawings, competitions]
@@ -1313,6 +1318,11 @@ components:
           type: string
         imageUrl:
           type: string
+        additionalImages:
+          type: array
+          items:
+            type: string
+          nullable: true
         category:
           type: string
         author:

@@ -130,6 +130,7 @@ export interface GalleryImage {
   title: string;
   description?: string;
   imageUrl: string;
+  additionalImages?: string[] | null;
   category: GalleryImageCategory;
   author: string;
   year: string;
@@ -140,6 +141,7 @@ export interface CreateGalleryImageRequest {
   title: string;
   description?: string;
   imageUrl: string;
+  additionalImages?: string[] | null;
   category: string;
   author: string;
   year: string;

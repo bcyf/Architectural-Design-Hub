@@ -384,6 +384,7 @@ export const ListGalleryImagesResponseItem = zod.object({
   title: zod.string(),
   description: zod.string().optional(),
   imageUrl: zod.string(),
+  additionalImages: zod.array(zod.string()).nullish(),
   category: zod.enum([
     "studio-1st",
     "studio-2nd",
@@ -408,6 +409,7 @@ export const CreateGalleryImageBody = zod.object({
   title: zod.string(),
   description: zod.string().optional(),
   imageUrl: zod.string(),
+  additionalImages: zod.array(zod.string()).nullish(),
   category: zod.string(),
   author: zod.string(),
   year: zod.string(),
@@ -424,6 +426,7 @@ export const UpdateGalleryImageBody = zod.object({
   title: zod.string(),
   description: zod.string().optional(),
   imageUrl: zod.string(),
+  additionalImages: zod.array(zod.string()).nullish(),
   category: zod.string(),
   author: zod.string(),
   year: zod.string(),
@@ -434,6 +437,7 @@ export const UpdateGalleryImageResponse = zod.object({
   title: zod.string(),
   description: zod.string().optional(),
   imageUrl: zod.string(),
+  additionalImages: zod.array(zod.string()).nullish(),
   category: zod.enum([
     "studio-1st",
     "studio-2nd",

@@ -12,6 +12,7 @@ export interface GalleryImage {
   title: string;
   description?: string;
   imageUrl: string;
+  additionalImages?: string[] | null;
   category: GalleryImageCategory;
   author: string;
   year: string;
