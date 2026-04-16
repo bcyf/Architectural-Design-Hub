@@ -1,7 +1,7 @@
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { Link } from "wouter";
 
-const EFFECTIVE_DATE = "April 16, 2026";
+const EFFECTIVE_DATE = "2022";
 const ORG_NAME = "Architecture Student Association FBC";
 const SHORT_NAME = "ASA FBC";
 const EMAIL = "archstudentassociationfbc@gmail.com";
