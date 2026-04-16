@@ -109,12 +109,12 @@ export default function About() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-4 mt-8">
-                <img src="https://images.unsplash.com/photo-1531834685032-c34bf0d84c77?w=600&q=80" alt="Students working" className="w-full h-64 object-cover" />
-                <img src="https://pixabay.com/get/g54a299588aa44fe631d0a11c588f200aa01c31b2fc2ed16229bc54ee750e1c66a0265587d9d88be89245bbac054cf55b2714c58257077ada272deb8afe0189d4_1280.jpg" alt="Models" className="w-full h-48 object-cover" />
+                <img src={`${import.meta.env.BASE_URL}images/about-1.jpeg`} alt="Students in lecture" className="w-full h-64 object-cover" />
+                <img src={`${import.meta.env.BASE_URL}images/about-3.jpeg`} alt="Model making studio" className="w-full h-48 object-cover" />
               </div>
               <div className="space-y-4">
-                <img src="https://images.unsplash.com/photo-1524178232363-1fb2b075b655?w=600&q=80" alt="Lecture" className="w-full h-48 object-cover" />
-                <img src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=600&q=80" alt="Sketches" className="w-full h-64 object-cover" />
+                <img src={`${import.meta.env.BASE_URL}images/about-2.jpeg`} alt="Site visit team" className="w-full h-48 object-cover" />
+                <img src={`${import.meta.env.BASE_URL}images/about-4.jpeg`} alt="Fieldwork" className="w-full h-64 object-cover" />
               </div>
             </div>
           </div>
