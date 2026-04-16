@@ -44,7 +44,7 @@ export function Navbar() {
           {/* Logo */}
           <Link href="/" className="group flex items-center gap-2 z-50 relative">
             <img
-              src={`${import.meta.env.BASE_URL}images/logo.jpg`}
+              src={`${import.meta.env.BASE_URL}images/logo.png`}
               alt="ARC Logo"
               className="h-10 w-auto object-contain"
             />

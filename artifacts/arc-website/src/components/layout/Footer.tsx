@@ -42,7 +42,7 @@ export function Footer() {
           <div className="space-y-6">
             <Link href="/" className="flex items-center gap-2">
               <img
-                src={`${import.meta.env.BASE_URL}images/logo.jpg`}
+                src={`${import.meta.env.BASE_URL}images/logo.png`}
                 alt="ARC Logo"
                 className="h-10 w-auto object-contain brightness-0 invert"
               />
