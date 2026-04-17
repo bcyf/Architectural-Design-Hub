@@ -42,7 +42,7 @@ export default function Home() {
     if (allQuotes.length <= 1) return;
     const timer = setInterval(() => {
       setQuoteIndex((i) => (i + 1) % allQuotes.length);
-    }, 5000);
+    }, 10000);
     return () => clearInterval(timer);
   }, [allQuotes.length]);
   
