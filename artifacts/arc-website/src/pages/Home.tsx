@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
+import { format } from "date-fns";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -239,60 +240,69 @@ export default function Home() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <SectionHeader title="The Drafting Board" subtitle="Latest Insights" centered />
           
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-12">
-            {/* Featured Post (First one) */}
-            <div className="group cursor-pointer">
-              <div className="aspect-[4/3] overflow-hidden bg-muted mb-6">
-                {/* landing page architectural structure */}
-                <img 
-                  src="https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80" 
-                  alt="Featured architectural news" 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
-              </div>
-              <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-widest text-primary mb-3">
-                <span>Alumni Spotlight</span>
-                <span className="w-1 h-1 bg-border rounded-full" />
-                <span>5 Min Read</span>
-              </div>
-              <h3 className="text-3xl font-display font-bold mb-4 group-hover:text-primary transition-colors">
-                Redefining Urban Spaces: An Interview with Sarah Chen
-              </h3>
-              <p className="text-muted-foreground leading-relaxed mb-6">
-                We sat down with ARC alumni Sarah Chen ('19) to discuss her recent award-winning sustainable housing project in downtown Seattle and how her studio experience shaped her approach.
-              </p>
-              <div className="flex items-center text-sm font-medium">
-                Read Article <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+          {newsLoading ? (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-12">
+              <div className="h-96 bg-muted animate-pulse" />
+              <div className="space-y-6">
+                {[1,2,3].map(i => <div key={i} className="h-24 bg-muted animate-pulse" />)}
               </div>
             </div>
-            
-            {/* List of other posts */}
-            <div className="flex flex-col justify-center space-y-8">
-              {[
-                { title: "Top 5 Render Plugins for 2025", category: "Tech Tips", date: "May 10", excerpt: "Boost your workflow with these essential rendering tools tested by our studio peers." },
-                { title: "Opinion: The End of Parametricism?", category: "Opinion", date: "May 05", excerpt: "Are we moving towards a more restrained, material-focused architectural language?" },
-                { title: "Recap: Spring Architecture Gala", category: "News", date: "April 28", excerpt: "Highlights from our biggest networking event of the semester." }
-              ].map((post, i) => (
-                <div key={i} className="group cursor-pointer border-b border-border/50 pb-8 last:border-0 last:pb-0">
-                  <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-widest text-muted-foreground mb-2">
-                    <span className="text-primary">{post.category}</span>
-                    <span className="w-1 h-1 bg-border rounded-full" />
-                    <span>{post.date}</span>
-                  </div>
-                  <h4 className="text-xl font-display font-bold mb-2 group-hover:text-primary transition-colors">
-                    {post.title}
-                  </h4>
-                  <p className="text-muted-foreground text-sm line-clamp-2">
-                    {post.excerpt}
-                  </p>
-                </div>
-              ))}
-              
-              <Button variant="outline" className="w-fit rounded-none mt-4" asChild>
-                <Link href="/blog">View All Articles</Link>
-              </Button>
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-12">
+              {/* Featured Post — first article */}
+              {newsData && newsData.length > 0 && (() => {
+                const featured = newsData[0] as any;
+                return (
+                  <Link href={`/blog/${featured.id}`} className="group cursor-pointer block">
+                    <div className="aspect-[4/3] overflow-hidden bg-muted mb-6">
+                      <img
+                        src={featured.imageUrl || "https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=1200&q=80"}
+                        alt={featured.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                      />
+                    </div>
+                    <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-widest text-primary mb-3">
+                      <span>{featured.category}</span>
+                      <span className="w-1 h-1 bg-border rounded-full" />
+                      <span>{featured.readTime} Min Read</span>
+                    </div>
+                    <h3 className="text-3xl font-display font-bold mb-4 group-hover:text-primary transition-colors">
+                      {featured.title}
+                    </h3>
+                    <p className="text-muted-foreground leading-relaxed mb-6 line-clamp-3">
+                      {featured.excerpt}
+                    </p>
+                    <div className="flex items-center text-sm font-medium">
+                      Read Article <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" />
+                    </div>
+                  </Link>
+                );
+              })()}
+
+              {/* List of remaining posts */}
+              <div className="flex flex-col justify-center space-y-8">
+                {(newsData?.slice(1) as any[] ?? []).map((post: any) => (
+                  <Link key={post.id} href={`/blog/${post.id}`} className="group cursor-pointer border-b border-border/50 pb-8 last:border-0 last:pb-0 block">
+                    <div className="flex items-center gap-3 text-xs font-medium uppercase tracking-widest text-muted-foreground mb-2">
+                      <span className="text-primary">{post.category}</span>
+                      <span className="w-1 h-1 bg-border rounded-full" />
+                      <span>{format(new Date(post.publishedAt), "MMM d")}</span>
+                    </div>
+                    <h4 className="text-xl font-display font-bold mb-2 group-hover:text-primary transition-colors">
+                      {post.title}
+                    </h4>
+                    <p className="text-muted-foreground text-sm line-clamp-2">
+                      {post.excerpt}
+                    </p>
+                  </Link>
+                ))}
+
+                <Button variant="outline" className="w-fit rounded-none mt-4" asChild>
+                  <Link href="/blog">View All Articles</Link>
+                </Button>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </section>
       <RsvpModal event={rsvpEvent} onClose={() => setRsvpEvent(null)} />
