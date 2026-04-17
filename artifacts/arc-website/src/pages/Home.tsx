@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "wouter";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { ArrowRight, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { PageWrapper } from "@/components/layout/PageWrapper";
@@ -33,7 +33,18 @@ export default function Home() {
   const { data: quotes } = useListQuotes();
   const [rsvpEvent, setRsvpEvent] = useState<Event | null>(null);
 
-  const activeQuote = quotes?.find(q => q.isActive) ?? (quotes?.length ? quotes[0] : null);
+  const allQuotes = quotes?.length
+    ? quotes
+    : [{ id: 0, text: FALLBACK_QUOTE.text, author: FALLBACK_QUOTE.author }];
+  const [quoteIndex, setQuoteIndex] = useState(0);
+
+  useEffect(() => {
+    if (allQuotes.length <= 1) return;
+    const timer = setInterval(() => {
+      setQuoteIndex((i) => (i + 1) % allQuotes.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [allQuotes.length]);
   
   const events = eventsData?.length ? eventsData : MOCK_EVENTS;
   
@@ -183,12 +194,43 @@ export default function Home() {
         <div className="absolute inset-0 opacity-5 bg-drafting-grid pointer-events-none" />
         <div className="max-w-4xl mx-auto px-4 text-center relative z-10">
           <span className="text-6xl text-primary font-display leading-none block mb-4">"</span>
-          <blockquote className="text-2xl md:text-4xl font-display font-medium leading-tight mb-8">
-            {activeQuote?.text ?? FALLBACK_QUOTE.text}
-          </blockquote>
-          <cite className="text-muted-foreground uppercase tracking-widest font-medium">
-            — {activeQuote?.author ?? FALLBACK_QUOTE.author}
-          </cite>
+
+          <div className="relative min-h-[10rem] flex flex-col items-center justify-center">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={quoteIndex}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{ duration: 0.6, ease: "easeInOut" }}
+                className="text-center"
+              >
+                <blockquote className="text-2xl md:text-4xl font-display font-medium leading-tight mb-8">
+                  {allQuotes[quoteIndex]?.text}
+                </blockquote>
+                <cite className="text-muted-foreground uppercase tracking-widest font-medium not-italic">
+                  — {allQuotes[quoteIndex]?.author}
+                </cite>
+              </motion.div>
+            </AnimatePresence>
+          </div>
+
+          {/* Dot indicators */}
+          {allQuotes.length > 1 && (
+            <div className="flex items-center justify-center gap-2 mt-10">
+              {allQuotes.map((_, i) => (
+                <button
+                  key={i}
+                  onClick={() => setQuoteIndex(i)}
+                  className={`rounded-full transition-all duration-300 ${
+                    i === quoteIndex
+                      ? "w-6 h-2 bg-primary"
+                      : "w-2 h-2 bg-primary/30 hover:bg-primary/60"
+                  }`}
+                />
+              ))}
+            </div>
+          )}
         </div>
       </section>
 
