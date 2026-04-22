@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -15,11 +15,67 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from "@/components/ui/dialog";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
-import { Plus, Edit, Trash2 } from "lucide-react";
+import { Plus, Edit, Trash2, Link2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
+
+function InsertLinkDialog({
+  open,
+  onOpenChange,
+  onInsert,
+}: {
+  open: boolean;
+  onOpenChange: (v: boolean) => void;
+  onInsert: (text: string, url: string) => void;
+}) {
+  const [linkText, setLinkText] = useState("");
+  const [linkUrl, setLinkUrl] = useState("");
+
+  const handleInsert = () => {
+    if (!linkText.trim() || !linkUrl.trim()) return;
+    onInsert(linkText.trim(), linkUrl.trim());
+    setLinkText("");
+    setLinkUrl("");
+    onOpenChange(false);
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-sm">
+        <DialogHeader>
+          <DialogTitle>Insert Link</DialogTitle>
+          <DialogDescription>The link will be inserted at your cursor position in the article content.</DialogDescription>
+        </DialogHeader>
+        <div className="space-y-3 pt-1">
+          <div>
+            <label className="text-sm font-medium mb-1 block">Display Text</label>
+            <Input
+              placeholder="e.g. Click here"
+              value={linkText}
+              onChange={e => setLinkText(e.target.value)}
+              autoFocus
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium mb-1 block">URL</label>
+            <Input
+              placeholder="https://example.com"
+              value={linkUrl}
+              onChange={e => setLinkUrl(e.target.value)}
+              onKeyDown={e => e.key === "Enter" && handleInsert()}
+            />
+          </div>
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" size="sm" onClick={() => onOpenChange(false)}>Cancel</Button>
+            <Button type="button" size="sm" onClick={handleInsert} disabled={!linkText.trim() || !linkUrl.trim()}>Insert</Button>
+          </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 const newsSchema = z.object({
   title: z.string().min(1, "Required"),
@@ -42,6 +98,8 @@ export default function BlogManager() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [editingPost, setEditingPost] = useState<NewsPost | null>(null);
   const [itemToDelete, setItemToDelete] = useState<number | null>(null);
+  const [isLinkDialogOpen, setIsLinkDialogOpen] = useState(false);
+  const contentTextareaRef = useRef<HTMLTextAreaElement>(null);
 
   const createMutation = useCreateNewsPost();
   const updateMutation = useUpdateNewsPost();
@@ -87,6 +145,24 @@ export default function BlogManager() {
           setIsDialogOpen(false);
         }
       });
+    }
+  };
+
+  const insertLink = (text: string, url: string) => {
+    const textarea = contentTextareaRef.current;
+    const currentValue = form.getValues("content");
+    const markdown = `[${text}](${url})`;
+    if (textarea) {
+      const start = textarea.selectionStart ?? currentValue.length;
+      const end = textarea.selectionEnd ?? currentValue.length;
+      const newValue = currentValue.slice(0, start) + markdown + currentValue.slice(end);
+      form.setValue("content", newValue, { shouldDirty: true });
+      setTimeout(() => {
+        textarea.focus();
+        textarea.setSelectionRange(start + markdown.length, start + markdown.length);
+      }, 0);
+    } else {
+      form.setValue("content", currentValue + markdown, { shouldDirty: true });
     }
   };
 
@@ -200,7 +276,34 @@ export default function BlogManager() {
               )} />
               
               <FormField control={form.control} name="content" render={({ field }) => (
-                <FormItem><FormLabel>Full Content</FormLabel><FormControl><Textarea className="h-48 font-mono text-sm" {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <div className="flex items-center justify-between mb-1">
+                    <FormLabel>Full Content</FormLabel>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="h-7 gap-1.5 text-xs"
+                      onClick={() => setIsLinkDialogOpen(true)}
+                    >
+                      <Link2 className="w-3 h-3" /> Insert Link
+                    </Button>
+                  </div>
+                  <FormControl>
+                    <Textarea
+                      className="h-48 font-mono text-sm"
+                      {...field}
+                      ref={(el) => {
+                        (contentTextareaRef as any).current = el;
+                        field.ref(el);
+                      }}
+                    />
+                  </FormControl>
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Use <code className="bg-muted px-1 rounded">[link text](https://url.com)</code> to add clickable links. Separate paragraphs with a blank line.
+                  </p>
+                  <FormMessage />
+                </FormItem>
               )} />
 
               <FormField
@@ -225,6 +328,12 @@ export default function BlogManager() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      <InsertLinkDialog
+        open={isLinkDialogOpen}
+        onOpenChange={setIsLinkDialogOpen}
+        onInsert={insertLink}
+      />
 
       <DeleteConfirmDialog 
         open={!!itemToDelete} 

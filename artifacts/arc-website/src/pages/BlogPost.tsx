@@ -4,6 +4,36 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { format } from "date-fns";
 import { ArrowLeft, Clock, User } from "lucide-react";
 
+const LINK_REGEX = /\[([^\]]+)\]\((https?:\/\/[^\)]+)\)/g;
+
+function renderWithLinks(text: string): React.ReactNode[] {
+  const parts: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  LINK_REGEX.lastIndex = 0;
+  while ((match = LINK_REGEX.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      parts.push(text.slice(lastIndex, match.index));
+    }
+    parts.push(
+      <a
+        key={match.index}
+        href={match[2]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="text-primary underline underline-offset-2 hover:text-primary/80 transition-colors"
+      >
+        {match[1]}
+      </a>
+    );
+    lastIndex = match.index + match[0].length;
+  }
+  if (lastIndex < text.length) {
+    parts.push(text.slice(lastIndex));
+  }
+  return parts;
+}
+
 const CATEGORIES = ["Reviews", "Opinion", "Alumni Spotlight", "Tech Tips", "News"];
 
 export default function BlogPost() {
@@ -93,7 +123,7 @@ export default function BlogPost() {
         <div className="prose prose-neutral max-w-none text-foreground leading-relaxed space-y-5">
           {post.content.split("\n\n").map((paragraph, i) => (
             <p key={i} className="text-base leading-8 text-foreground/90">
-              {paragraph}
+              {renderWithLinks(paragraph)}
             </p>
           ))}
         </div>
