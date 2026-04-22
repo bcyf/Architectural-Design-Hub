@@ -5,7 +5,7 @@ const EFFECTIVE_DATE = "2022";
 const ORG_NAME = "Architecture Student Association FBC";
 const SHORT_NAME = "ASA FBC";
 const EMAIL = "archstudentassociationfbc@gmail.com";
-const SITE_URL = "https://arc-website.replit.app";
+const SITE_URL = "https://asafbc.it.com";
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
