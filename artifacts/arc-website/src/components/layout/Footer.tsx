@@ -54,7 +54,7 @@ export function Footer() {
               Fostering a community of design excellence, critical thinking, and architectural innovation for students.
             </p>
             <div className="flex space-x-4">
-              <a href="https://instagram.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center hover:bg-primary hover:border-primary transition-colors">
+              <a href="https://www.instagram.com/asa.fbc?igsh=djVka2UycnA3MnNi" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center hover:bg-primary hover:border-primary transition-colors">
                 <Instagram size={18} />
               </a>
               <a href="https://linkedin.com" target="_blank" rel="noreferrer" className="w-10 h-10 rounded-full border border-white/20 flex items-center justify-center hover:bg-primary hover:border-primary transition-colors">
