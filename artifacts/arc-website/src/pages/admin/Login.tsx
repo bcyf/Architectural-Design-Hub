@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { Hexagon, Lock, User, Eye, EyeOff } from "lucide-react";
+import { Lock, User, Eye, EyeOff } from "lucide-react";
 import { setToken } from "@/lib/auth";
 
 export default function AdminLogin() {
@@ -41,7 +41,11 @@ export default function AdminLogin() {
         {/* Logo */}
         <div className="flex flex-col items-center mb-8">
           <div className="flex items-center gap-3 mb-2">
-            <Hexagon className="w-8 h-8 text-primary fill-primary/20" />
+            <img
+              src={`${import.meta.env.BASE_URL}images/logo.png`}
+              alt="ASA FBC Logo"
+              className="w-10 h-10 object-contain bg-white rounded p-1"
+            />
             <span className="font-bold text-2xl text-white tracking-tight">FBC Admin</span>
           </div>
           <p className="text-zinc-500 text-sm">Architecture Student Association FBC</p>
