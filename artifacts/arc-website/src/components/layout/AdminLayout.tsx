@@ -1,7 +1,7 @@
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, Calendar, FileText, Image as ImageIcon, 
-  Users, Folder, Briefcase, Mail, LogOut, Hexagon, Settings, Newspaper, Quote, HelpCircle
+  Users, Folder, Briefcase, Mail, LogOut, Settings, Newspaper, Quote, HelpCircle
 } from "lucide-react";
 import { removeToken } from "@/lib/auth";
 
@@ -37,7 +37,11 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
       <aside className="w-64 bg-zinc-950 text-zinc-300 flex flex-col shrink-0 transition-all border-r border-zinc-900">
         <div className="h-16 flex items-center px-6 border-b border-zinc-900">
           <Link href="/admin" className="flex items-center gap-3 text-white hover:text-primary transition-colors">
-            <Hexagon className="w-6 h-6 text-primary fill-primary/20" />
+            <img
+              src={`${import.meta.env.BASE_URL}images/logo.png`}
+              alt="ASA FBC Logo"
+              className="w-8 h-8 object-contain bg-white rounded p-0.5"
+            />
             <span className="font-display font-bold text-lg tracking-tight">FBC Admin</span>
           </Link>
         </div>
