@@ -23,10 +23,25 @@ import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
 
+const ARCH_CATEGORIES = [
+  { value: "history-theory",        label: "History & Theory" },
+  { value: "design-methods",        label: "Design Methods" },
+  { value: "structures",            label: "Structures & Engineering" },
+  { value: "materials",             label: "Materials & Construction" },
+  { value: "digital-tools",         label: "Digital Tools (BIM / CAD)" },
+  { value: "professional-practice", label: "Professional Practice" },
+  { value: "urban-design",          label: "Urban Design & Planning" },
+  { value: "interior",              label: "Interior Architecture" },
+  { value: "sustainability",        label: "Sustainability & Environment" },
+  { value: "presentation",          label: "Presentation & Visualization" },
+];
+
 const resourceSchema = z.object({
   title: z.string().min(1, "Required"),
   description: z.string().min(1, "Required"),
   type: z.string().min(1, "Required"),
+  category: z.string().optional().or(z.literal("")),
+  tags: z.string().optional().or(z.literal("")),
   fileUrl: z.string().optional().or(z.literal("")),
   imageUrl: z.string().optional().or(z.literal("")),
   software: z.string().optional().or(z.literal("")),
@@ -49,12 +64,12 @@ export default function ResourcesManager() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(resourceSchema),
-    defaultValues: { title: "", description: "", type: "guide", fileUrl: "", imageUrl: "", software: "" },
+    defaultValues: { title: "", description: "", type: "guide", category: "", tags: "", fileUrl: "", imageUrl: "", software: "" },
   });
 
   const handleOpenCreate = () => {
     setEditingResource(null);
-    form.reset({ title: "", description: "", type: "guide", fileUrl: "", imageUrl: "", software: "" });
+    form.reset({ title: "", description: "", type: "guide", category: "", tags: "", fileUrl: "", imageUrl: "", software: "" });
     setIsDialogOpen(true);
   };
 
@@ -62,6 +77,8 @@ export default function ResourcesManager() {
     setEditingResource(resource);
     form.reset({
       title: resource.title, description: resource.description, type: resource.type,
+      category: (resource as any).category || "",
+      tags: (resource as any).tags || "",
       fileUrl: resource.fileUrl || "", imageUrl: (resource as any).imageUrl || "", software: resource.software || ""
     });
     setIsDialogOpen(true);
@@ -169,7 +186,7 @@ export default function ResourcesManager() {
                 <FormField control={form.control} name="type" render={({ field }) => (
                   <FormItem>
                     <FormLabel>Type</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
+                    <Select onValueChange={field.onChange} value={field.value}>
                       <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
                         <SelectItem value="book">Book / PDF</SelectItem>
@@ -186,6 +203,33 @@ export default function ResourcesManager() {
                 )} />
                 <FormField control={form.control} name="software" render={({ field }) => (
                   <FormItem><FormLabel>Software (Optional)</FormLabel><FormControl><Input placeholder="e.g. Revit" {...field} /></FormControl><FormMessage /></FormItem>
+                )} />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FormField control={form.control} name="category" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Architectural Category (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value || ""}>
+                      <FormControl><SelectTrigger><SelectValue placeholder="None — General toolkit" /></SelectTrigger></FormControl>
+                      <SelectContent>
+                        <SelectItem value="">None — General Toolkit</SelectItem>
+                        {ARCH_CATEGORIES.map(c => (
+                          <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <p className="text-[11px] text-muted-foreground">Assigns this resource to the Research Library under the chosen topic.</p>
+                    <FormMessage />
+                  </FormItem>
+                )} />
+                <FormField control={form.control} name="tags" render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Tags (Optional)</FormLabel>
+                    <FormControl><Input placeholder="e.g. Bauhaus, modernism, concrete" {...field} /></FormControl>
+                    <p className="text-[11px] text-muted-foreground">Comma-separated keywords for search.</p>
+                    <FormMessage />
+                  </FormItem>
                 )} />
               </div>
               <FormField control={form.control} name="fileUrl" render={({ field }) => (
