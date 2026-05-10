@@ -9,8 +9,25 @@ import {
   CheckCircle2, Circle, Clock, AlertCircle, Flag, Calendar, Trash2,
   ArrowLeft, Lock, Globe, Pencil, LogOut, UserCheck, UserPlus, Search, Check,
   Upload, FileText, FileCheck, Download, ThumbsUp, Paperclip, Eye,
-  ImagePlus, FileUp, ZoomIn, Mic, StopCircle
+  ImagePlus, FileUp, ZoomIn, Mic, StopCircle, CornerUpLeft, Smile
 } from "lucide-react";
+
+const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "✅"];
+
+function getDateLabel(dateStr: string) {
+  const d = new Date(dateStr);
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (d.toDateString() === today.toDateString()) return "Today";
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return d.toLocaleDateString([], { month: "long", day: "numeric", year: d.getFullYear() !== today.getFullYear() ? "numeric" : undefined });
+}
+
+function avatarColor(id: number) {
+  const COLORS = ["#6366f1","#0ea5e9","#f59e0b","#10b981","#ec4899","#8b5cf6","#ef4444","#14b8a6"];
+  return COLORS[id % COLORS.length];
+}
 
 async function apiFetch(path: string, opts: RequestInit = {}) {
   const token = getStudentToken();
@@ -86,6 +103,9 @@ export default function GroupRoom() {
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState("");
 
+  const [replyTo, setReplyTo] = useState<any>(null);
+  const [showEmojiPicker, setShowEmojiPicker] = useState<number | null>(null);
+
   // Chat attachment state
   const [chatAttach, setChatAttach] = useState<{ file: File; preview: string; type: "image" | "document" | "audio" } | null>(null);
   const [chatSending, setChatSending] = useState(false);
@@ -120,7 +140,7 @@ export default function GroupRoom() {
     queryKey: ["group-messages", groupId],
     queryFn: () => apiFetch(`/groups/${groupId}/messages`),
     enabled: !!group?.isMember,
-    refetchInterval: 5000,
+    refetchInterval: 3000,
   });
 
   const { data: tasks = [] } = useQuery({
@@ -148,7 +168,13 @@ export default function GroupRoom() {
 
   const sendMsg = useMutation({
     mutationFn: (payload: any) => apiFetch(`/groups/${groupId}/messages`, { method: "POST", body: JSON.stringify(payload) }),
-    onSuccess: () => { setMsgInput(""); setChatAttach(null); refetchMessages(); },
+    onSuccess: () => { setMsgInput(""); setChatAttach(null); setReplyTo(null); refetchMessages(); },
+  });
+
+  const toggleReaction = useMutation({
+    mutationFn: ({ msgId, emoji }: { msgId: number; emoji: string }) =>
+      apiFetch(`/groups/${groupId}/messages/${msgId}/reactions`, { method: "POST", body: JSON.stringify({ emoji }) }),
+    onSuccess: () => refetchMessages(),
   });
 
   async function handleSendMessage(e: React.FormEvent) {
@@ -167,6 +193,7 @@ export default function GroupRoom() {
         payload.attachmentPath = objectPath;
         payload.attachmentType = chatAttach.type;
       }
+      if (replyTo) payload.replyToId = replyTo.id;
       sendMsg.mutate(payload);
     } catch {
       alert("Failed to upload file. Please try again.");
@@ -429,71 +456,167 @@ export default function GroupRoom() {
             ) : (
               <>
                 {/* Messages */}
-                <div className="flex-1 overflow-y-auto space-y-4 mb-3 pr-1">
+                <div className="flex-1 overflow-y-auto mb-3 pr-1" onClick={() => setShowEmojiPicker(null)}>
                   {messages.length === 0 && <p className="text-center text-muted-foreground text-sm pt-10">No messages yet. Start the discussion!</p>}
-                  {messages.map((msg: any) => {
-                    const isMe = msg.studentId === me?.id;
-                    return (
-                      <div key={msg.id} className={`flex gap-3 ${isMe ? "flex-row-reverse" : ""}`}>
-                        <div className="w-8 h-8 rounded-full flex-shrink-0 flex items-center justify-center text-white text-xs font-bold"
-                          style={{ background: isMe ? "#16a34a" : "#6366f1" }}>
-                          {msg.firstName[0]}{msg.lastName[0]}
-                        </div>
-                        <div className={`max-w-[72%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
-                          <div className={`text-xs text-muted-foreground mb-1 ${isMe ? "text-right" : ""}`}>
-                            {msg.firstName} {msg.lastName} · {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                          </div>
+                  {(() => {
+                    let lastDateLabel = "";
+                    return (messages as any[]).map((msg) => {
+                      const isMe = msg.studentId === me?.id;
+                      const dateLabel = getDateLabel(msg.createdAt);
+                      const showDateSep = dateLabel !== lastDateLabel;
+                      lastDateLabel = dateLabel;
+                      return (
+                        <div key={msg.id}>
+                          {/* Date separator */}
+                          {showDateSep && (
+                            <div className="flex items-center gap-3 py-4">
+                              <div className="flex-1 h-px bg-border" />
+                              <span className="text-xs text-muted-foreground font-medium px-2">{dateLabel}</span>
+                              <div className="flex-1 h-px bg-border" />
+                            </div>
+                          )}
 
-                          {/* Image attachment */}
-                          {msg.attachmentType === "image" && (
-                            <button
-                              onClick={() => setLightboxSrc(msgAttachSrc(msg.attachmentPath))}
-                              className="relative group mb-1 block max-w-xs overflow-hidden border border-border rounded-sm hover:opacity-90 transition-opacity">
-                              <img
-                                src={msgAttachSrc(msg.attachmentPath)}
-                                alt={msg.attachmentName}
-                                className="max-w-full max-h-64 object-cover block"
-                                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
-                              />
-                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
-                                <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                          {/* Message row */}
+                          <div className={`group flex items-end gap-2 mb-1 ${isMe ? "flex-row-reverse" : ""}`}>
+                            {/* Avatar — others only */}
+                            {!isMe && (
+                              <div className="w-7 h-7 rounded-full flex-shrink-0 flex items-center justify-center text-white text-[10px] font-bold mb-5"
+                                style={{ background: avatarColor(msg.studentId) }}>
+                                {msg.firstName[0]}{msg.lastName[0]}
                               </div>
-                            </button>
-                          )}
+                            )}
 
-                          {/* Audio attachment */}
-                          {msg.attachmentType === "audio" && (
-                            <div className="mb-1">
-                              <AudioPlayer src={msgAttachSrc(msg.attachmentPath)} isMe={isMe} />
+                            <div className={`max-w-[72%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
+                              {/* Sender name — others only */}
+                              {!isMe && (
+                                <span className="text-xs font-semibold mb-0.5 ml-1" style={{ color: avatarColor(msg.studentId) }}>
+                                  {msg.firstName} {msg.lastName}
+                                </span>
+                              )}
+
+                              {/* Action buttons on hover */}
+                              <div className={`flex items-center gap-1 mb-1 opacity-0 group-hover:opacity-100 transition-opacity ${isMe ? "flex-row-reverse" : ""}`}>
+                                <button onClick={() => { setReplyTo(msg); setShowEmojiPicker(null); }} title="Reply"
+                                  className="w-6 h-6 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors">
+                                  <CornerUpLeft className="w-3 h-3" />
+                                </button>
+                                <div className="relative">
+                                  <button onClick={e => { e.stopPropagation(); setShowEmojiPicker(p => p === msg.id ? null : msg.id); }} title="React"
+                                    className="w-6 h-6 rounded-full bg-background border border-border flex items-center justify-center text-muted-foreground hover:text-primary hover:border-primary/50 transition-colors">
+                                    <Smile className="w-3 h-3" />
+                                  </button>
+                                  {showEmojiPicker === msg.id && (
+                                    <div onClick={e => e.stopPropagation()}
+                                      className={`absolute bottom-full mb-1.5 ${isMe ? "right-0" : "left-0"} bg-background border border-border shadow-xl rounded-full px-1.5 py-1 flex gap-0.5 z-30`}>
+                                      {QUICK_EMOJIS.map(em => (
+                                        <button key={em}
+                                          onClick={() => { toggleReaction.mutate({ msgId: msg.id, emoji: em }); setShowEmojiPicker(null); }}
+                                          className="text-base hover:scale-125 transition-transform w-8 h-8 flex items-center justify-center rounded-full hover:bg-muted">
+                                          {em}
+                                        </button>
+                                      ))}
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+
+                              {/* Bubble */}
+                              <div className={`flex flex-col overflow-hidden ${isMe
+                                ? "bg-primary text-primary-foreground rounded-t-2xl rounded-bl-2xl rounded-br-sm"
+                                : "bg-muted border border-border rounded-t-2xl rounded-br-2xl rounded-bl-sm"}`}>
+
+                                {/* Reply quote */}
+                                {msg.replyTo && (
+                                  <div className={`mx-2 mt-2 px-2.5 py-1.5 rounded-lg text-xs border-l-2 ${isMe
+                                    ? "bg-white/10 border-white/40 text-primary-foreground/80"
+                                    : "bg-background border-primary text-muted-foreground"}`}>
+                                    <p className="font-semibold mb-0.5">{msg.replyTo.firstName} {msg.replyTo.lastName}</p>
+                                    <p className="truncate">{msg.replyTo.content || (msg.replyTo.attachmentType === "audio" ? "🎤 Voice message" : (msg.replyTo.attachmentName || "Attachment"))}</p>
+                                  </div>
+                                )}
+
+                                {/* Image */}
+                                {msg.attachmentType === "image" && (
+                                  <button onClick={() => setLightboxSrc(msgAttachSrc(msg.attachmentPath))}
+                                    className="relative group/img overflow-hidden m-1 rounded-xl">
+                                    <img src={msgAttachSrc(msg.attachmentPath)} alt={msg.attachmentName}
+                                      className="max-w-full max-h-64 object-cover block"
+                                      onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+                                    <div className="absolute inset-0 bg-black/0 group-hover/img:bg-black/20 transition-colors flex items-center justify-center">
+                                      <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover/img:opacity-100 transition-opacity" />
+                                    </div>
+                                  </button>
+                                )}
+
+                                {/* Audio */}
+                                {msg.attachmentType === "audio" && (
+                                  <div className="px-2 pt-2">
+                                    <AudioPlayer src={msgAttachSrc(msg.attachmentPath)} isMe={isMe} />
+                                  </div>
+                                )}
+
+                                {/* Document */}
+                                {msg.attachmentType === "document" && (
+                                  <a href={msgAttachSrc(msg.attachmentPath)} download={msg.attachmentName} target="_blank" rel="noopener noreferrer"
+                                    className={`flex items-center gap-2.5 mx-2 mt-2 px-3 py-2 rounded-lg text-sm border transition-colors ${isMe
+                                      ? "bg-white/10 border-white/20 text-primary-foreground hover:bg-white/20"
+                                      : "bg-background border-border hover:bg-muted"}`}>
+                                    {fileIcon(msg.attachmentName)}
+                                    <span className="truncate max-w-[160px] font-medium">{msg.attachmentName}</span>
+                                    <Download className={`w-3.5 h-3.5 flex-shrink-0 ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`} />
+                                  </a>
+                                )}
+
+                                {/* Text + timestamp footer */}
+                                <div className="flex items-end gap-2 px-3 py-2">
+                                  {msg.content && (
+                                    <span className="text-sm leading-relaxed flex-1 break-words min-w-0">{msg.content}</span>
+                                  )}
+                                  <span className={`text-[10px] flex-shrink-0 ml-auto ${isMe ? "text-primary-foreground/60" : "text-muted-foreground"}`}>
+                                    {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                                  </span>
+                                </div>
+                              </div>
+
+                              {/* Reactions */}
+                              {msg.reactions && msg.reactions.length > 0 && (
+                                <div className={`flex flex-wrap gap-1 mt-1 ${isMe ? "justify-end" : ""}`}>
+                                  {(msg.reactions as { emoji: string; count: number; reacted: boolean }[]).map(r => (
+                                    <button key={r.emoji}
+                                      onClick={() => toggleReaction.mutate({ msgId: msg.id, emoji: r.emoji })}
+                                      className={`flex items-center gap-1 px-2 py-0.5 rounded-full border text-xs transition-colors ${r.reacted
+                                        ? "bg-primary/10 border-primary/50 text-primary font-semibold"
+                                        : "bg-background border-border text-muted-foreground hover:border-primary/30"}`}>
+                                      <span>{r.emoji}</span>
+                                      <span>{r.count}</span>
+                                    </button>
+                                  ))}
+                                </div>
+                              )}
                             </div>
-                          )}
-
-                          {/* Document attachment */}
-                          {msg.attachmentType === "document" && (
-                            <a
-                              href={msgAttachSrc(msg.attachmentPath)}
-                              download={msg.attachmentName}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className={`flex items-center gap-2.5 px-3 py-2.5 mb-1 border hover:bg-muted/60 transition-colors text-sm ${isMe ? "bg-primary/10 border-primary/30" : "bg-muted border-border"}`}>
-                              {fileIcon(msg.attachmentName)}
-                              <span className="truncate max-w-[180px] font-medium">{msg.attachmentName}</span>
-                              <Download className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
-                            </a>
-                          )}
-
-                          {/* Text content */}
-                          {msg.content && (
-                            <div className={`px-4 py-2.5 text-sm leading-relaxed ${isMe ? "bg-primary text-primary-foreground" : "bg-muted border border-border"}`}>
-                              {msg.content}
-                            </div>
-                          )}
+                          </div>
                         </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    });
+                  })()}
                   <div ref={chatEndRef} />
                 </div>
+
+                {/* Reply preview */}
+                {replyTo && (
+                  <div className="flex items-center gap-2 mb-1.5 px-3 py-2 bg-muted/50 border-l-2 border-primary rounded-r-sm">
+                    <CornerUpLeft className="w-3.5 h-3.5 text-primary flex-shrink-0" />
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-primary">{replyTo.firstName} {replyTo.lastName}</p>
+                      <p className="text-xs text-muted-foreground truncate">
+                        {replyTo.content || (replyTo.attachmentType === "audio" ? "🎤 Voice message" : (replyTo.attachmentName || "Attachment"))}
+                      </p>
+                    </div>
+                    <button onClick={() => setReplyTo(null)} className="text-muted-foreground hover:text-foreground flex-shrink-0">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                )}
 
                 {/* Recording indicator */}
                 {isRecording && (

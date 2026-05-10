@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, discussionGroupsTable, groupMembersTable, groupMessagesTable, groupTasksTable, groupTaskSubmissionsTable, studentsTable } from "@workspace/db";
+import { db, discussionGroupsTable, groupMembersTable, groupMessagesTable, groupMessageReactionsTable, groupTasksTable, groupTaskSubmissionsTable, studentsTable } from "@workspace/db";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { requireStudentAuth } from "./students";
 
@@ -191,6 +191,7 @@ router.get("/groups/:id/messages", requireStudentAuth, async (req: Request, res:
       attachmentName: groupMessagesTable.attachmentName,
       attachmentPath: groupMessagesTable.attachmentPath,
       attachmentType: groupMessagesTable.attachmentType,
+      replyToId: groupMessagesTable.replyToId,
       createdAt: groupMessagesTable.createdAt,
       studentId: groupMessagesTable.studentId,
       firstName: studentsTable.firstName,
@@ -200,8 +201,58 @@ router.get("/groups/:id/messages", requireStudentAuth, async (req: Request, res:
       .where(eq(groupMessagesTable.groupId, groupId))
       .orderBy(groupMessagesTable.createdAt);
 
-    res.json(messages);
+    const msgIds = messages.map(m => m.id);
+
+    // Fetch reactions
+    let reactionsData: { messageId: number; emoji: string; studentId: number }[] = [];
+    if (msgIds.length > 0) {
+      reactionsData = await db.select({
+        messageId: groupMessageReactionsTable.messageId,
+        emoji: groupMessageReactionsTable.emoji,
+        studentId: groupMessageReactionsTable.studentId,
+      }).from(groupMessageReactionsTable)
+        .where(inArray(groupMessageReactionsTable.messageId, msgIds));
+    }
+
+    // Fetch reply-to parent messages
+    const replyToIds = [...new Set(messages.filter(m => m.replyToId).map(m => m.replyToId!))] ;
+    const replyParents: Record<number, any> = {};
+    if (replyToIds.length > 0) {
+      const parents = await db.select({
+        id: groupMessagesTable.id,
+        content: groupMessagesTable.content,
+        attachmentName: groupMessagesTable.attachmentName,
+        attachmentType: groupMessagesTable.attachmentType,
+        firstName: studentsTable.firstName,
+        lastName: studentsTable.lastName,
+      }).from(groupMessagesTable)
+        .innerJoin(studentsTable, eq(groupMessagesTable.studentId, studentsTable.id))
+        .where(inArray(groupMessagesTable.id, replyToIds));
+      parents.forEach(p => { replyParents[p.id] = p; });
+    }
+
+    // Build reaction map: messageId → [{emoji, count, reacted}]
+    const reactionMap: Record<number, { emoji: string; count: number; reacted: boolean }[]> = {};
+    for (const r of reactionsData) {
+      if (!reactionMap[r.messageId]) reactionMap[r.messageId] = [];
+      const existing = reactionMap[r.messageId].find(x => x.emoji === r.emoji);
+      if (existing) {
+        existing.count++;
+        if (r.studentId === me.id) existing.reacted = true;
+      } else {
+        reactionMap[r.messageId].push({ emoji: r.emoji, count: 1, reacted: r.studentId === me.id });
+      }
+    }
+
+    const result = messages.map(m => ({
+      ...m,
+      replyTo: m.replyToId ? (replyParents[m.replyToId] ?? null) : null,
+      reactions: reactionMap[m.id] || [],
+    }));
+
+    res.json(result);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to fetch messages" });
   }
 });
@@ -209,7 +260,7 @@ router.get("/groups/:id/messages", requireStudentAuth, async (req: Request, res:
 router.post("/groups/:id/messages", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
-  const { content, attachmentName, attachmentPath, attachmentType } = req.body;
+  const { content, attachmentName, attachmentPath, attachmentType, replyToId } = req.body;
 
   const hasText = !!content?.trim();
   const hasAttachment = !!attachmentPath && !!attachmentName;
@@ -229,12 +280,47 @@ router.post("/groups/:id/messages", requireStudentAuth, async (req: Request, res
         attachmentName: hasAttachment ? attachmentName : null,
         attachmentPath: hasAttachment ? attachmentPath : null,
         attachmentType: hasAttachment ? (attachmentType || "document") : null,
+        replyToId: replyToId ? Number(replyToId) : null,
       })
       .returning();
 
-    res.status(201).json({ ...msg, firstName: me.firstName, lastName: me.lastName });
+    res.status(201).json({ ...msg, firstName: me.firstName, lastName: me.lastName, replyTo: null, reactions: [] });
   } catch (err) {
+    console.error(err);
     res.status(500).json({ error: "Failed to send message" });
+  }
+});
+
+// ── Reactions ─────────────────────────────────────────────────────────────────
+
+router.post("/groups/:id/messages/:msgId/reactions", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  const msgId = Number(req.params.msgId);
+  const { emoji } = req.body;
+  if (!emoji) return res.status(400).json({ error: "emoji is required" });
+
+  try {
+    const membership = await isMember(groupId, me.id);
+    if (!membership) return res.status(403).json({ error: "Members only" });
+
+    const [existing] = await db.select().from(groupMessageReactionsTable)
+      .where(and(
+        eq(groupMessageReactionsTable.messageId, msgId),
+        eq(groupMessageReactionsTable.studentId, me.id),
+        eq(groupMessageReactionsTable.emoji, emoji),
+      ));
+
+    if (existing) {
+      await db.delete(groupMessageReactionsTable).where(eq(groupMessageReactionsTable.id, existing.id));
+      res.json({ action: "removed" });
+    } else {
+      await db.insert(groupMessageReactionsTable).values({ messageId: msgId, studentId: me.id, emoji });
+      res.json({ action: "added" });
+    }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to toggle reaction" });
   }
 });
 
@@ -259,7 +345,6 @@ router.get("/groups/:id/tasks", requireStudentAuth, async (req: Request, res: Re
       .where(eq(groupTasksTable.groupId, groupId))
       .orderBy(groupTasksTable.createdAt);
 
-    // Count submissions per task
     const taskIds = tasks.map(t => t.id);
     let subCounts: Record<number, number> = {};
     if (taskIds.length > 0) {
@@ -342,7 +427,6 @@ router.delete("/groups/:id/tasks/:taskId", requireStudentAuth, async (req: Reque
 
 // ── Task Submissions ───────────────────────────────────────────────────────────
 
-// GET /groups/:id/tasks/:taskId/submissions
 router.get("/groups/:id/tasks/:taskId/submissions", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -375,7 +459,6 @@ router.get("/groups/:id/tasks/:taskId/submissions", requireStudentAuth, async (r
   }
 });
 
-// POST /groups/:id/tasks/:taskId/submissions
 router.post("/groups/:id/tasks/:taskId/submissions", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -398,7 +481,6 @@ router.post("/groups/:id/tasks/:taskId/submissions", requireStudentAuth, async (
       .values({ taskId, groupId, studentId: me.id, fileName: fileName.trim(), objectPath, note: note?.trim() || null })
       .returning();
 
-    // Auto-move task to "review" when work is submitted (unless already done)
     if (task.status === "todo" || task.status === "in_progress") {
       await db.update(groupTasksTable).set({ status: "review", updatedAt: new Date() })
         .where(eq(groupTasksTable.id, taskId));
@@ -411,8 +493,6 @@ router.post("/groups/:id/tasks/:taskId/submissions", requireStudentAuth, async (
   }
 });
 
-// PATCH /groups/:id/tasks/:taskId/submissions/:subId/approve
-// Leader/co-leader approves a submission and marks task as done
 router.patch("/groups/:id/tasks/:taskId/submissions/:subId/approve", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -431,7 +511,6 @@ router.patch("/groups/:id/tasks/:taskId/submissions/:subId/approve", requireStud
       .where(and(eq(groupTaskSubmissionsTable.id, subId), eq(groupTaskSubmissionsTable.taskId, taskId)))
       .returning();
 
-    // Mark task as done
     await db.update(groupTasksTable)
       .set({ status: "done", updatedAt: new Date() })
       .where(and(eq(groupTasksTable.id, taskId), eq(groupTasksTable.groupId, groupId)));

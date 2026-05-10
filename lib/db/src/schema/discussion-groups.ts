@@ -33,7 +33,16 @@ export const groupMessagesTable = pgTable("group_messages", {
   content: text("content"),
   attachmentName: text("attachment_name"),
   attachmentPath: text("attachment_path"),
-  attachmentType: text("attachment_type"), // "image" | "document"
+  attachmentType: text("attachment_type"),
+  replyToId: integer("reply_to_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const groupMessageReactionsTable = pgTable("group_message_reactions", {
+  id: serial("id").primaryKey(),
+  messageId: integer("message_id").references(() => groupMessagesTable.id, { onDelete: "cascade" }).notNull(),
+  studentId: integer("student_id").references(() => studentsTable.id, { onDelete: "cascade" }).notNull(),
+  emoji: text("emoji").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
@@ -68,5 +77,6 @@ export const groupTaskSubmissionsTable = pgTable("group_task_submissions", {
 export type DiscussionGroup = typeof discussionGroupsTable.$inferSelect;
 export type GroupMember = typeof groupMembersTable.$inferSelect;
 export type GroupMessage = typeof groupMessagesTable.$inferSelect;
+export type GroupMessageReaction = typeof groupMessageReactionsTable.$inferSelect;
 export type GroupTask = typeof groupTasksTable.$inferSelect;
 export type GroupTaskSubmission = typeof groupTaskSubmissionsTable.$inferSelect;
