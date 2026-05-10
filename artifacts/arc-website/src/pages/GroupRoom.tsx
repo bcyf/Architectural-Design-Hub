@@ -5,12 +5,13 @@ import { getStudentToken, getStudentPayload } from "@/lib/student-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Whiteboard from "@/components/Whiteboard";
 import GroupCall from "@/components/GroupCall";
+import AudioPlayer from "@/components/AudioPlayer";
 import {
   MessageSquare, ClipboardList, Users, Send, Plus, X, ChevronDown,
   CheckCircle2, Circle, Clock, AlertCircle, Flag, Calendar, Trash2,
   ArrowLeft, Lock, Globe, Pencil, LogOut, UserCheck, UserPlus, Search, Check,
   Upload, FileText, FileCheck, Download, ThumbsUp, Paperclip, Eye,
-  ImagePlus, FileUp, ZoomIn, PenLine
+  ImagePlus, FileUp, ZoomIn, PenLine, Mic, StopCircle
 } from "lucide-react";
 
 async function apiFetch(path: string, opts: RequestInit = {}) {
@@ -90,11 +91,18 @@ export default function GroupRoom() {
   const [showWhiteboard, setShowWhiteboard] = useState(false);
 
   // Chat attachment state
-  const [chatAttach, setChatAttach] = useState<{ file: File; preview: string; type: "image" | "document" } | null>(null);
+  const [chatAttach, setChatAttach] = useState<{ file: File; preview: string; type: "image" | "document" | "audio" } | null>(null);
   const [chatSending, setChatSending] = useState(false);
   const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const docInputRef = useRef<HTMLInputElement>(null);
+
+  // Audio recording
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   // Submission state
   const [viewingTask, setViewingTask] = useState<any>(null);
@@ -187,6 +195,66 @@ export default function GroupRoom() {
 
   function msgAttachSrc(path: string) {
     return `/api/storage/objects${path.replace(/^\/objects/, "")}`;
+  }
+
+  async function handleToggleRecording() {
+    if (isRecording) {
+      // Stop recording
+      mediaRecorderRef.current?.stop();
+    } else {
+      // Clear any existing attachment
+      setChatAttach(null);
+      setRecordingSeconds(0);
+      audioChunksRef.current = [];
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const mimeType = MediaRecorder.isTypeSupported("audio/webm;codecs=opus")
+          ? "audio/webm;codecs=opus"
+          : MediaRecorder.isTypeSupported("audio/ogg;codecs=opus")
+          ? "audio/ogg;codecs=opus"
+          : "audio/webm";
+        const recorder = new MediaRecorder(stream, { mimeType });
+        mediaRecorderRef.current = recorder;
+
+        recorder.ondataavailable = (e) => {
+          if (e.data.size > 0) audioChunksRef.current.push(e.data);
+        };
+
+        recorder.onstop = () => {
+          stream.getTracks().forEach(t => t.stop());
+          if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+          setIsRecording(false);
+
+          const blob = new Blob(audioChunksRef.current, { type: mimeType });
+          const ext = mimeType.includes("ogg") ? "ogg" : "webm";
+          const file = new File([blob], `voice-${Date.now()}.${ext}`, { type: mimeType });
+          const preview = URL.createObjectURL(blob);
+          setChatAttach({ file, preview, type: "audio" });
+        };
+
+        recorder.start(250);
+        setIsRecording(true);
+
+        recordingTimerRef.current = setInterval(() => {
+          setRecordingSeconds(s => s + 1);
+        }, 1000);
+      } catch {
+        alert("Microphone permission denied. Please allow mic access.");
+      }
+    }
+  }
+
+  function cancelRecording() {
+    mediaRecorderRef.current?.stream?.getTracks().forEach(t => t.stop());
+    mediaRecorderRef.current = null;
+    if (recordingTimerRef.current) clearInterval(recordingTimerRef.current);
+    audioChunksRef.current = [];
+    setIsRecording(false);
+    setRecordingSeconds(0);
+  }
+
+  function formatRecTime(s: number) {
+    return `${Math.floor(s / 60)}:${(s % 60).toString().padStart(2, "0")}`;
   }
 
   const createTask = useMutation({
@@ -408,6 +476,13 @@ export default function GroupRoom() {
                             </button>
                           )}
 
+                          {/* Audio attachment */}
+                          {msg.attachmentType === "audio" && (
+                            <div className="mb-1">
+                              <AudioPlayer src={msgAttachSrc(msg.attachmentPath)} isMe={isMe} />
+                            </div>
+                          )}
+
                           {/* Document attachment */}
                           {msg.attachmentType === "document" && (
                             <a
@@ -435,20 +510,36 @@ export default function GroupRoom() {
                   <div ref={chatEndRef} />
                 </div>
 
+                {/* Recording indicator */}
+                {isRecording && (
+                  <div className="flex items-center gap-3 mb-2 px-3 py-2 bg-destructive/5 border border-destructive/30">
+                    <div className="w-2.5 h-2.5 rounded-full bg-destructive animate-pulse flex-shrink-0" />
+                    <span className="text-sm font-mono text-destructive font-semibold">{formatRecTime(recordingSeconds)}</span>
+                    <span className="text-xs text-muted-foreground flex-1">Recording…</span>
+                    <button onClick={cancelRecording} className="text-muted-foreground hover:text-foreground transition-colors text-xs flex-shrink-0">Cancel</button>
+                  </div>
+                )}
+
                 {/* Attachment preview strip */}
-                {chatAttach && (
+                {!isRecording && chatAttach && (
                   <div className="flex items-center gap-3 mb-2 px-3 py-2 bg-muted/50 border border-border">
                     {chatAttach.type === "image" ? (
                       <img src={chatAttach.preview} alt="preview" className="w-12 h-12 object-cover flex-shrink-0 border border-border" />
+                    ) : chatAttach.type === "audio" ? (
+                      <div className="flex-1">
+                        <AudioPlayer src={chatAttach.preview} />
+                      </div>
                     ) : (
                       <div className="w-12 h-12 flex items-center justify-center bg-background border border-border flex-shrink-0">
                         {fileIcon(chatAttach.file.name)}
                       </div>
                     )}
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium truncate">{chatAttach.file.name}</p>
-                      <p className="text-xs text-muted-foreground">{(chatAttach.file.size / 1024).toFixed(0)} KB · {chatAttach.type}</p>
-                    </div>
+                    {chatAttach.type !== "audio" && (
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium truncate">{chatAttach.file.name}</p>
+                        <p className="text-xs text-muted-foreground">{(chatAttach.file.size / 1024).toFixed(0)} KB · {chatAttach.type}</p>
+                      </div>
+                    )}
                     <button onClick={() => setChatAttach(null)} className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">
                       <X className="w-4 h-4" />
                     </button>
@@ -457,27 +548,50 @@ export default function GroupRoom() {
 
                 {/* Input row */}
                 <form onSubmit={handleSendMessage} className="flex gap-2 items-end">
-                  {/* Photo button */}
-                  <button type="button" title="Send photo"
-                    onClick={() => photoInputRef.current?.click()}
-                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-border hover:border-primary hover:text-primary text-muted-foreground transition-colors">
-                    <ImagePlus className="w-4 h-4" />
-                  </button>
-                  {/* Document button */}
-                  <button type="button" title="Send document"
-                    onClick={() => docInputRef.current?.click()}
-                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-border hover:border-primary hover:text-primary text-muted-foreground transition-colors">
-                    <FileUp className="w-4 h-4" />
-                  </button>
+                  {!isRecording && (
+                    <>
+                      {/* Photo button */}
+                      <button type="button" title="Send photo"
+                        onClick={() => photoInputRef.current?.click()}
+                        className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-border hover:border-primary hover:text-primary text-muted-foreground transition-colors">
+                        <ImagePlus className="w-4 h-4" />
+                      </button>
+                      {/* Document button */}
+                      <button type="button" title="Send document"
+                        onClick={() => docInputRef.current?.click()}
+                        className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-border hover:border-primary hover:text-primary text-muted-foreground transition-colors">
+                        <FileUp className="w-4 h-4" />
+                      </button>
+                    </>
+                  )}
 
-                  <input value={msgInput} onChange={e => setMsgInput(e.target.value)}
-                    placeholder={chatAttach ? "Add a caption… (optional)" : "Write a message…"}
-                    className="flex-1 border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors h-10" />
+                  {/* Mic button — replaces text input when recording */}
+                  {isRecording ? (
+                    <button type="button" onClick={handleToggleRecording} title="Stop recording"
+                      className="flex-1 h-10 flex items-center justify-center gap-2 border-2 border-destructive text-destructive hover:bg-destructive/10 transition-colors font-medium text-sm">
+                      <StopCircle className="w-4 h-4" /> Stop & Send
+                    </button>
+                  ) : (
+                    <>
+                      <input value={msgInput} onChange={e => setMsgInput(e.target.value)}
+                        placeholder={chatAttach ? "Add a caption… (optional)" : "Write a message…"}
+                        className="flex-1 border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors h-10" />
+                      {/* Mic button */}
+                      {!chatAttach && (
+                        <button type="button" onClick={handleToggleRecording} title="Record voice message"
+                          className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-border hover:border-destructive hover:text-destructive text-muted-foreground transition-colors">
+                          <Mic className="w-4 h-4" />
+                        </button>
+                      )}
+                    </>
+                  )}
 
-                  <button type="submit" disabled={(!msgInput.trim() && !chatAttach) || chatSending}
-                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors">
-                    {chatSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
-                  </button>
+                  {!isRecording && (
+                    <button type="submit" disabled={(!msgInput.trim() && !chatAttach) || chatSending}
+                      className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors">
+                      {chatSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
+                    </button>
+                  )}
 
                   {/* Hidden file inputs */}
                   <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
