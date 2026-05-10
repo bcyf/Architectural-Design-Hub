@@ -7,7 +7,8 @@ import {
   MessageSquare, ClipboardList, Users, Send, Plus, X, ChevronDown,
   CheckCircle2, Circle, Clock, AlertCircle, Flag, Calendar, Trash2,
   ArrowLeft, Lock, Globe, Pencil, LogOut, UserCheck, UserPlus, Search, Check,
-  Upload, FileText, FileCheck, Download, ThumbsUp, Paperclip, Eye
+  Upload, FileText, FileCheck, Download, ThumbsUp, Paperclip, Eye,
+  ImagePlus, FileUp, ZoomIn
 } from "lucide-react";
 
 async function apiFetch(path: string, opts: RequestInit = {}) {
@@ -84,6 +85,13 @@ export default function GroupRoom() {
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState("");
 
+  // Chat attachment state
+  const [chatAttach, setChatAttach] = useState<{ file: File; preview: string; type: "image" | "document" } | null>(null);
+  const [chatSending, setChatSending] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState<string | null>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const docInputRef = useRef<HTMLInputElement>(null);
+
   // Submission state
   const [viewingTask, setViewingTask] = useState<any>(null);
   const [showSubmitForm, setShowSubmitForm] = useState(false);
@@ -131,9 +139,51 @@ export default function GroupRoom() {
   }, [tasks]);
 
   const sendMsg = useMutation({
-    mutationFn: (content: string) => apiFetch(`/groups/${groupId}/messages`, { method: "POST", body: JSON.stringify({ content }) }),
-    onSuccess: () => { setMsgInput(""); refetchMessages(); },
+    mutationFn: (payload: any) => apiFetch(`/groups/${groupId}/messages`, { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: () => { setMsgInput(""); setChatAttach(null); refetchMessages(); },
   });
+
+  async function handleSendMessage(e: React.FormEvent) {
+    e.preventDefault();
+    if (chatSending) return;
+    const hasText = msgInput.trim().length > 0;
+    const hasAttach = !!chatAttach;
+    if (!hasText && !hasAttach) return;
+    setChatSending(true);
+    try {
+      let payload: any = {};
+      if (hasText) payload.content = msgInput.trim();
+      if (hasAttach) {
+        const { objectPath, fileName } = await uploadFile(chatAttach.file);
+        payload.attachmentName = fileName;
+        payload.attachmentPath = objectPath;
+        payload.attachmentType = chatAttach.type;
+      }
+      sendMsg.mutate(payload);
+    } catch {
+      alert("Failed to upload file. Please try again.");
+    } finally {
+      setChatSending(false);
+    }
+  }
+
+  function handlePhotoSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setChatAttach({ file, preview: URL.createObjectURL(file), type: "image" });
+    e.target.value = "";
+  }
+
+  function handleDocSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setChatAttach({ file, preview: "", type: "document" });
+    e.target.value = "";
+  }
+
+  function msgAttachSrc(path: string) {
+    return `/api/storage/objects${path.replace(/^\/objects/, "")}`;
+  }
 
   const createTask = useMutation({
     mutationFn: (data: any) => apiFetch(`/groups/${groupId}/tasks`, { method: "POST", body: JSON.stringify(data) }),
@@ -310,7 +360,8 @@ export default function GroupRoom() {
               <div className="flex-1 flex items-center justify-center text-muted-foreground text-sm">Join the group to participate in the discussion.</div>
             ) : (
               <>
-                <div className="flex-1 overflow-y-auto space-y-4 mb-4 pr-1">
+                {/* Messages */}
+                <div className="flex-1 overflow-y-auto space-y-4 mb-3 pr-1">
                   {messages.length === 0 && <p className="text-center text-muted-foreground text-sm pt-10">No messages yet. Start the discussion!</p>}
                   {messages.map((msg: any) => {
                     const isMe = msg.studentId === me?.id;
@@ -320,26 +371,102 @@ export default function GroupRoom() {
                           style={{ background: isMe ? "#16a34a" : "#6366f1" }}>
                           {msg.firstName[0]}{msg.lastName[0]}
                         </div>
-                        <div className={`max-w-[70%] ${isMe ? "items-end" : "items-start"} flex flex-col`}>
+                        <div className={`max-w-[72%] flex flex-col ${isMe ? "items-end" : "items-start"}`}>
                           <div className={`text-xs text-muted-foreground mb-1 ${isMe ? "text-right" : ""}`}>
                             {msg.firstName} {msg.lastName} · {new Date(msg.createdAt).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                           </div>
-                          <div className={`px-4 py-2.5 text-sm leading-relaxed ${isMe ? "bg-primary text-primary-foreground" : "bg-muted border border-border"}`}>
-                            {msg.content}
-                          </div>
+
+                          {/* Image attachment */}
+                          {msg.attachmentType === "image" && (
+                            <button
+                              onClick={() => setLightboxSrc(msgAttachSrc(msg.attachmentPath))}
+                              className="relative group mb-1 block max-w-xs overflow-hidden border border-border rounded-sm hover:opacity-90 transition-opacity">
+                              <img
+                                src={msgAttachSrc(msg.attachmentPath)}
+                                alt={msg.attachmentName}
+                                className="max-w-full max-h-64 object-cover block"
+                                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+                              />
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                <ZoomIn className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                              </div>
+                            </button>
+                          )}
+
+                          {/* Document attachment */}
+                          {msg.attachmentType === "document" && (
+                            <a
+                              href={msgAttachSrc(msg.attachmentPath)}
+                              download={msg.attachmentName}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={`flex items-center gap-2.5 px-3 py-2.5 mb-1 border hover:bg-muted/60 transition-colors text-sm ${isMe ? "bg-primary/10 border-primary/30" : "bg-muted border-border"}`}>
+                              {fileIcon(msg.attachmentName)}
+                              <span className="truncate max-w-[180px] font-medium">{msg.attachmentName}</span>
+                              <Download className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+                            </a>
+                          )}
+
+                          {/* Text content */}
+                          {msg.content && (
+                            <div className={`px-4 py-2.5 text-sm leading-relaxed ${isMe ? "bg-primary text-primary-foreground" : "bg-muted border border-border"}`}>
+                              {msg.content}
+                            </div>
+                          )}
                         </div>
                       </div>
                     );
                   })}
                   <div ref={chatEndRef} />
                 </div>
-                <form onSubmit={e => { e.preventDefault(); if (msgInput.trim()) sendMsg.mutate(msgInput); }} className="flex gap-3">
-                  <input value={msgInput} onChange={e => setMsgInput(e.target.value)} placeholder="Write a message…"
-                    className="flex-1 border border-border bg-background px-4 py-3 text-sm focus:outline-none focus:border-primary transition-colors" />
-                  <button type="submit" disabled={!msgInput.trim() || sendMsg.isPending}
-                    className="bg-primary text-primary-foreground px-5 py-3 hover:bg-primary/90 disabled:opacity-60 transition-colors">
-                    <Send className="w-4 h-4" />
+
+                {/* Attachment preview strip */}
+                {chatAttach && (
+                  <div className="flex items-center gap-3 mb-2 px-3 py-2 bg-muted/50 border border-border">
+                    {chatAttach.type === "image" ? (
+                      <img src={chatAttach.preview} alt="preview" className="w-12 h-12 object-cover flex-shrink-0 border border-border" />
+                    ) : (
+                      <div className="w-12 h-12 flex items-center justify-center bg-background border border-border flex-shrink-0">
+                        {fileIcon(chatAttach.file.name)}
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-medium truncate">{chatAttach.file.name}</p>
+                      <p className="text-xs text-muted-foreground">{(chatAttach.file.size / 1024).toFixed(0)} KB · {chatAttach.type}</p>
+                    </div>
+                    <button onClick={() => setChatAttach(null)} className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                )}
+
+                {/* Input row */}
+                <form onSubmit={handleSendMessage} className="flex gap-2 items-end">
+                  {/* Photo button */}
+                  <button type="button" title="Send photo"
+                    onClick={() => photoInputRef.current?.click()}
+                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-border hover:border-primary hover:text-primary text-muted-foreground transition-colors">
+                    <ImagePlus className="w-4 h-4" />
                   </button>
+                  {/* Document button */}
+                  <button type="button" title="Send document"
+                    onClick={() => docInputRef.current?.click()}
+                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center border border-border hover:border-primary hover:text-primary text-muted-foreground transition-colors">
+                    <FileUp className="w-4 h-4" />
+                  </button>
+
+                  <input value={msgInput} onChange={e => setMsgInput(e.target.value)}
+                    placeholder={chatAttach ? "Add a caption… (optional)" : "Write a message…"}
+                    className="flex-1 border border-border bg-background px-4 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors h-10" />
+
+                  <button type="submit" disabled={(!msgInput.trim() && !chatAttach) || chatSending}
+                    className="flex-shrink-0 w-10 h-10 flex items-center justify-center bg-primary text-primary-foreground hover:bg-primary/90 disabled:opacity-60 transition-colors">
+                    {chatSending ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+
+                  {/* Hidden file inputs */}
+                  <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
+                  <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={handleDocSelect} />
                 </form>
               </>
             )}
@@ -840,6 +967,16 @@ export default function GroupRoom() {
             </button>
           </div>
         </div>
+      </div>
+    )}
+
+    {/* ── LIGHTBOX ── */}
+    {lightboxSrc && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4" onClick={() => setLightboxSrc(null)}>
+        <button className="absolute top-4 right-4 text-white/70 hover:text-white transition-colors" onClick={() => setLightboxSrc(null)}>
+          <X className="w-6 h-6" />
+        </button>
+        <img src={lightboxSrc} alt="Full view" className="max-w-full max-h-[90vh] object-contain shadow-2xl" onClick={e => e.stopPropagation()} />
       </div>
     )}
     </>

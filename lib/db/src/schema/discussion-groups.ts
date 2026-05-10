@@ -30,7 +30,10 @@ export const groupMessagesTable = pgTable("group_messages", {
   id: serial("id").primaryKey(),
   groupId: integer("group_id").references(() => discussionGroupsTable.id, { onDelete: "cascade" }).notNull(),
   studentId: integer("student_id").references(() => studentsTable.id, { onDelete: "cascade" }).notNull(),
-  content: text("content").notNull(),
+  content: text("content"),
+  attachmentName: text("attachment_name"),
+  attachmentPath: text("attachment_path"),
+  attachmentType: text("attachment_type"), // "image" | "document"
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

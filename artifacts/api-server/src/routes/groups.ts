@@ -186,8 +186,15 @@ router.get("/groups/:id/messages", requireStudentAuth, async (req: Request, res:
     if (!membership) return res.status(403).json({ error: "You must be a member to view messages" });
 
     const messages = await db.select({
-      id: groupMessagesTable.id, content: groupMessagesTable.content, createdAt: groupMessagesTable.createdAt,
-      studentId: groupMessagesTable.studentId, firstName: studentsTable.firstName, lastName: studentsTable.lastName,
+      id: groupMessagesTable.id,
+      content: groupMessagesTable.content,
+      attachmentName: groupMessagesTable.attachmentName,
+      attachmentPath: groupMessagesTable.attachmentPath,
+      attachmentType: groupMessagesTable.attachmentType,
+      createdAt: groupMessagesTable.createdAt,
+      studentId: groupMessagesTable.studentId,
+      firstName: studentsTable.firstName,
+      lastName: studentsTable.lastName,
     }).from(groupMessagesTable)
       .innerJoin(studentsTable, eq(groupMessagesTable.studentId, studentsTable.id))
       .where(eq(groupMessagesTable.groupId, groupId))
@@ -202,15 +209,27 @@ router.get("/groups/:id/messages", requireStudentAuth, async (req: Request, res:
 router.post("/groups/:id/messages", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
-  const { content } = req.body;
-  if (!content?.trim()) return res.status(400).json({ error: "Message cannot be empty" });
+  const { content, attachmentName, attachmentPath, attachmentType } = req.body;
+
+  const hasText = !!content?.trim();
+  const hasAttachment = !!attachmentPath && !!attachmentName;
+  if (!hasText && !hasAttachment) {
+    return res.status(400).json({ error: "Message must have text or an attachment" });
+  }
 
   try {
     const membership = await isMember(groupId, me.id);
     if (!membership) return res.status(403).json({ error: "You must be a member to post" });
 
     const [msg] = await db.insert(groupMessagesTable)
-      .values({ groupId, studentId: me.id, content: content.trim() })
+      .values({
+        groupId,
+        studentId: me.id,
+        content: hasText ? content.trim() : null,
+        attachmentName: hasAttachment ? attachmentName : null,
+        attachmentPath: hasAttachment ? attachmentPath : null,
+        attachmentType: hasAttachment ? (attachmentType || "document") : null,
+      })
       .returning();
 
     res.status(201).json({ ...msg, firstName: me.firstName, lastName: me.lastName });
