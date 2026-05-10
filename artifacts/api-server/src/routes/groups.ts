@@ -1,5 +1,5 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, discussionGroupsTable, groupMembersTable, groupMessagesTable, groupTasksTable, studentsTable } from "@workspace/db";
+import { db, discussionGroupsTable, groupMembersTable, groupMessagesTable, groupTasksTable, groupTaskSubmissionsTable, studentsTable } from "@workspace/db";
 import { eq, and, desc, inArray } from "drizzle-orm";
 import { requireStudentAuth } from "./students";
 
@@ -15,7 +15,6 @@ async function isMember(groupId: number, studentId: number) {
 
 // ── Groups CRUD ───────────────────────────────────────────────────────────────
 
-// GET /groups  – list groups the student is in + public groups they haven't joined
 router.get("/groups", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   try {
@@ -24,18 +23,12 @@ router.get("/groups", requireStudentAuth, async (req: Request, res: Response) =>
     const myGroupIds = myMemberships.map(m => m.groupId);
 
     const allGroups = await db.select({
-      id: discussionGroupsTable.id,
-      name: discussionGroupsTable.name,
-      description: discussionGroupsTable.description,
-      category: discussionGroupsTable.category,
-      isPrivate: discussionGroupsTable.isPrivate,
-      coverColor: discussionGroupsTable.coverColor,
-      createdBy: discussionGroupsTable.createdBy,
-      createdAt: discussionGroupsTable.createdAt,
+      id: discussionGroupsTable.id, name: discussionGroupsTable.name, description: discussionGroupsTable.description,
+      category: discussionGroupsTable.category, isPrivate: discussionGroupsTable.isPrivate,
+      coverColor: discussionGroupsTable.coverColor, createdBy: discussionGroupsTable.createdBy, createdAt: discussionGroupsTable.createdAt,
     }).from(discussionGroupsTable).orderBy(desc(discussionGroupsTable.createdAt));
 
-    const memberCounts = await db.select({ groupId: groupMembersTable.groupId })
-      .from(groupMembersTable);
+    const memberCounts = await db.select({ groupId: groupMembersTable.groupId }).from(groupMembersTable);
     const countMap: Record<number, number> = {};
     memberCounts.forEach(m => { countMap[m.groupId] = (countMap[m.groupId] || 0) + 1; });
 
@@ -50,7 +43,6 @@ router.get("/groups", requireStudentAuth, async (req: Request, res: Response) =>
   }
 });
 
-// POST /groups – create a new group
 router.post("/groups", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const { name, description, category, isPrivate, coverColor } = req.body;
@@ -61,10 +53,8 @@ router.post("/groups", requireStudentAuth, async (req: Request, res: Response) =
       .values({ name: name.trim(), description: description?.trim(), category: category || "general", isPrivate: !!isPrivate, coverColor: coverColor || "#16a34a", createdBy: me.id })
       .returning();
 
-    // Creator automatically joins as leader
     await db.insert(groupMembersTable).values({ groupId: group.id, studentId: me.id, role: "leader" });
 
-    // Add any invited members
     const invitedMembers: Array<{ studentId: number; role: string }> = req.body.invitedMembers || [];
     const validRoles = ["leader", "co-leader", "designer", "researcher", "reviewer", "member"];
     for (const inv of invitedMembers) {
@@ -72,7 +62,6 @@ router.post("/groups", requireStudentAuth, async (req: Request, res: Response) =
       await db.insert(groupMembersTable).values({ groupId: group.id, studentId: inv.studentId, role: validRoles.includes(inv.role) ? inv.role : "member" }).onConflictDoNothing();
     }
     const totalMembers = 1 + invitedMembers.filter(i => i.studentId !== me.id).length;
-
     res.status(201).json({ ...group, memberCount: totalMembers, isMember: true });
   } catch (err) {
     console.error(err);
@@ -80,7 +69,6 @@ router.post("/groups", requireStudentAuth, async (req: Request, res: Response) =
   }
 });
 
-// GET /groups/:id – full group details
 router.get("/groups/:id", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -93,14 +81,9 @@ router.get("/groups/:id", requireStudentAuth, async (req: Request, res: Response
     if (group.isPrivate && !membership) return res.status(403).json({ error: "This is a private group" });
 
     const members = await db.select({
-      id: groupMembersTable.id,
-      studentId: groupMembersTable.studentId,
-      role: groupMembersTable.role,
-      joinedAt: groupMembersTable.joinedAt,
-      firstName: studentsTable.firstName,
-      lastName: studentsTable.lastName,
-      email: studentsTable.email,
-      studentIdCode: studentsTable.studentId,
+      id: groupMembersTable.id, studentId: groupMembersTable.studentId, role: groupMembersTable.role,
+      joinedAt: groupMembersTable.joinedAt, firstName: studentsTable.firstName, lastName: studentsTable.lastName,
+      email: studentsTable.email, studentIdCode: studentsTable.studentId, profilePicture: studentsTable.profilePicture,
     }).from(groupMembersTable)
       .innerJoin(studentsTable, eq(groupMembersTable.studentId, studentsTable.id))
       .where(eq(groupMembersTable.groupId, groupId));
@@ -112,7 +95,6 @@ router.get("/groups/:id", requireStudentAuth, async (req: Request, res: Response
   }
 });
 
-// POST /groups/:id/join
 router.post("/groups/:id/join", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -127,9 +109,7 @@ router.post("/groups/:id/join", requireStudentAuth, async (req: Request, res: Re
     if (existing) return res.status(409).json({ error: "Already a member" });
 
     const validRoles = ["leader", "co-leader", "designer", "researcher", "reviewer", "member"];
-    const memberRole = validRoles.includes(role) ? role : "member";
-
-    await db.insert(groupMembersTable).values({ groupId, studentId: me.id, role: memberRole });
+    await db.insert(groupMembersTable).values({ groupId, studentId: me.id, role: validRoles.includes(role) ? role : "member" });
     res.json({ success: true });
   } catch (err) {
     console.error(err);
@@ -137,12 +117,10 @@ router.post("/groups/:id/join", requireStudentAuth, async (req: Request, res: Re
   }
 });
 
-// POST /groups/:id/invite – add members to an existing group (leader/co-leader only)
 router.post("/groups/:id/invite", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
   const { studentId, role } = req.body;
-
   if (!studentId) return res.status(400).json({ error: "studentId is required" });
 
   try {
@@ -156,9 +134,7 @@ router.post("/groups/:id/invite", requireStudentAuth, async (req: Request, res: 
     if (existing) return res.status(409).json({ error: "This student is already a member" });
 
     const validRoles = ["leader", "co-leader", "designer", "researcher", "reviewer", "member"];
-    const memberRole = validRoles.includes(role) ? role : "member";
-
-    await db.insert(groupMembersTable).values({ groupId, studentId: Number(studentId), role: memberRole });
+    await db.insert(groupMembersTable).values({ groupId, studentId: Number(studentId), role: validRoles.includes(role) ? role : "member" });
     res.status(201).json({ success: true });
   } catch (err) {
     console.error(err);
@@ -166,11 +142,9 @@ router.post("/groups/:id/invite", requireStudentAuth, async (req: Request, res: 
   }
 });
 
-// POST /groups/:id/leave
 router.post("/groups/:id/leave", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
-
   try {
     await db.delete(groupMembersTable).where(and(eq(groupMembersTable.groupId, groupId), eq(groupMembersTable.studentId, me.id)));
     res.json({ success: true });
@@ -179,7 +153,6 @@ router.post("/groups/:id/leave", requireStudentAuth, async (req: Request, res: R
   }
 });
 
-// PATCH /groups/:id/members/:memberId/role – update own role
 router.patch("/groups/:id/members/:memberId/role", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -203,11 +176,9 @@ router.patch("/groups/:id/members/:memberId/role", requireStudentAuth, async (re
 
 // ── Messages ──────────────────────────────────────────────────────────────────
 
-// GET /groups/:id/messages
 router.get("/groups/:id/messages", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
-
   try {
     const [group] = await db.select().from(discussionGroupsTable).where(eq(discussionGroupsTable.id, groupId));
     if (!group) return res.status(404).json({ error: "Group not found" });
@@ -215,12 +186,8 @@ router.get("/groups/:id/messages", requireStudentAuth, async (req: Request, res:
     if (!membership) return res.status(403).json({ error: "You must be a member to view messages" });
 
     const messages = await db.select({
-      id: groupMessagesTable.id,
-      content: groupMessagesTable.content,
-      createdAt: groupMessagesTable.createdAt,
-      studentId: groupMessagesTable.studentId,
-      firstName: studentsTable.firstName,
-      lastName: studentsTable.lastName,
+      id: groupMessagesTable.id, content: groupMessagesTable.content, createdAt: groupMessagesTable.createdAt,
+      studentId: groupMessagesTable.studentId, firstName: studentsTable.firstName, lastName: studentsTable.lastName,
     }).from(groupMessagesTable)
       .innerJoin(studentsTable, eq(groupMessagesTable.studentId, studentsTable.id))
       .where(eq(groupMessagesTable.groupId, groupId))
@@ -232,7 +199,6 @@ router.get("/groups/:id/messages", requireStudentAuth, async (req: Request, res:
   }
 });
 
-// POST /groups/:id/messages
 router.post("/groups/:id/messages", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -255,7 +221,6 @@ router.post("/groups/:id/messages", requireStudentAuth, async (req: Request, res
 
 // ── Tasks ─────────────────────────────────────────────────────────────────────
 
-// GET /groups/:id/tasks
 router.get("/groups/:id/tasks", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -265,30 +230,32 @@ router.get("/groups/:id/tasks", requireStudentAuth, async (req: Request, res: Re
     if (!membership) return res.status(403).json({ error: "Members only" });
 
     const tasks = await db.select({
-      id: groupTasksTable.id,
-      title: groupTasksTable.title,
-      description: groupTasksTable.description,
-      status: groupTasksTable.status,
-      priority: groupTasksTable.priority,
-      dueDate: groupTasksTable.dueDate,
-      createdAt: groupTasksTable.createdAt,
-      updatedAt: groupTasksTable.updatedAt,
-      assignedTo: groupTasksTable.assignedTo,
-      createdBy: groupTasksTable.createdBy,
-      assigneeName: studentsTable.firstName,
-      assigneeLastName: studentsTable.lastName,
+      id: groupTasksTable.id, title: groupTasksTable.title, description: groupTasksTable.description,
+      status: groupTasksTable.status, priority: groupTasksTable.priority, dueDate: groupTasksTable.dueDate,
+      createdAt: groupTasksTable.createdAt, updatedAt: groupTasksTable.updatedAt,
+      assignedTo: groupTasksTable.assignedTo, createdBy: groupTasksTable.createdBy,
+      assigneeName: studentsTable.firstName, assigneeLastName: studentsTable.lastName,
     }).from(groupTasksTable)
       .leftJoin(studentsTable, eq(groupTasksTable.assignedTo, studentsTable.id))
       .where(eq(groupTasksTable.groupId, groupId))
       .orderBy(groupTasksTable.createdAt);
 
-    res.json(tasks);
+    // Count submissions per task
+    const taskIds = tasks.map(t => t.id);
+    let subCounts: Record<number, number> = {};
+    if (taskIds.length > 0) {
+      const subs = await db.select({ taskId: groupTaskSubmissionsTable.taskId })
+        .from(groupTaskSubmissionsTable)
+        .where(inArray(groupTaskSubmissionsTable.taskId, taskIds));
+      subs.forEach(s => { subCounts[s.taskId] = (subCounts[s.taskId] || 0) + 1; });
+    }
+
+    res.json(tasks.map(t => ({ ...t, submissionCount: subCounts[t.id] || 0 })));
   } catch (err) {
     res.status(500).json({ error: "Failed to fetch tasks" });
   }
 });
 
-// POST /groups/:id/tasks
 router.post("/groups/:id/tasks", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -310,7 +277,6 @@ router.post("/groups/:id/tasks", requireStudentAuth, async (req: Request, res: R
   }
 });
 
-// PATCH /groups/:id/tasks/:taskId
 router.patch("/groups/:id/tasks/:taskId", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -339,7 +305,6 @@ router.patch("/groups/:id/tasks/:taskId", requireStudentAuth, async (req: Reques
   }
 });
 
-// DELETE /groups/:id/tasks/:taskId
 router.delete("/groups/:id/tasks/:taskId", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
@@ -353,6 +318,108 @@ router.delete("/groups/:id/tasks/:taskId", requireStudentAuth, async (req: Reque
     res.json({ success: true });
   } catch (err) {
     res.status(500).json({ error: "Failed to delete task" });
+  }
+});
+
+// ── Task Submissions ───────────────────────────────────────────────────────────
+
+// GET /groups/:id/tasks/:taskId/submissions
+router.get("/groups/:id/tasks/:taskId/submissions", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  const taskId = Number(req.params.taskId);
+
+  try {
+    const membership = await isMember(groupId, me.id);
+    if (!membership) return res.status(403).json({ error: "Members only" });
+
+    const submissions = await db.select({
+      id: groupTaskSubmissionsTable.id,
+      taskId: groupTaskSubmissionsTable.taskId,
+      studentId: groupTaskSubmissionsTable.studentId,
+      fileName: groupTaskSubmissionsTable.fileName,
+      objectPath: groupTaskSubmissionsTable.objectPath,
+      note: groupTaskSubmissionsTable.note,
+      isApproved: groupTaskSubmissionsTable.isApproved,
+      approvedAt: groupTaskSubmissionsTable.approvedAt,
+      submittedAt: groupTaskSubmissionsTable.submittedAt,
+      firstName: studentsTable.firstName,
+      lastName: studentsTable.lastName,
+    }).from(groupTaskSubmissionsTable)
+      .innerJoin(studentsTable, eq(groupTaskSubmissionsTable.studentId, studentsTable.id))
+      .where(and(eq(groupTaskSubmissionsTable.taskId, taskId), eq(groupTaskSubmissionsTable.groupId, groupId)))
+      .orderBy(desc(groupTaskSubmissionsTable.submittedAt));
+
+    res.json(submissions);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to fetch submissions" });
+  }
+});
+
+// POST /groups/:id/tasks/:taskId/submissions
+router.post("/groups/:id/tasks/:taskId/submissions", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  const taskId = Number(req.params.taskId);
+  const { fileName, objectPath, note } = req.body;
+
+  if (!fileName || !objectPath) {
+    return res.status(400).json({ error: "fileName and objectPath are required" });
+  }
+
+  try {
+    const membership = await isMember(groupId, me.id);
+    if (!membership) return res.status(403).json({ error: "Members only" });
+
+    const [task] = await db.select().from(groupTasksTable)
+      .where(and(eq(groupTasksTable.id, taskId), eq(groupTasksTable.groupId, groupId)));
+    if (!task) return res.status(404).json({ error: "Task not found" });
+
+    const [submission] = await db.insert(groupTaskSubmissionsTable)
+      .values({ taskId, groupId, studentId: me.id, fileName: fileName.trim(), objectPath, note: note?.trim() || null })
+      .returning();
+
+    // Auto-move task to "review" when work is submitted (unless already done)
+    if (task.status === "todo" || task.status === "in_progress") {
+      await db.update(groupTasksTable).set({ status: "review", updatedAt: new Date() })
+        .where(eq(groupTasksTable.id, taskId));
+    }
+
+    res.status(201).json({ ...submission, firstName: me.firstName, lastName: me.lastName });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to submit work" });
+  }
+});
+
+// PATCH /groups/:id/tasks/:taskId/submissions/:subId/approve
+// Leader/co-leader approves a submission and marks task as done
+router.patch("/groups/:id/tasks/:taskId/submissions/:subId/approve", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  const taskId = Number(req.params.taskId);
+  const subId = Number(req.params.subId);
+
+  try {
+    const membership = await isMember(groupId, me.id);
+    if (!membership) return res.status(403).json({ error: "Members only" });
+    if (!["leader", "co-leader"].includes(membership.role)) {
+      return res.status(403).json({ error: "Only leaders and co-leaders can approve submissions" });
+    }
+
+    const [sub] = await db.update(groupTaskSubmissionsTable)
+      .set({ isApproved: true, approvedBy: me.id, approvedAt: new Date() })
+      .where(and(eq(groupTaskSubmissionsTable.id, subId), eq(groupTaskSubmissionsTable.taskId, taskId)))
+      .returning();
+
+    // Mark task as done
+    await db.update(groupTasksTable)
+      .set({ status: "done", updatedAt: new Date() })
+      .where(and(eq(groupTasksTable.id, taskId), eq(groupTasksTable.groupId, groupId)));
+
+    res.json(sub);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to approve submission" });
   }
 });
 

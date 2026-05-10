@@ -48,7 +48,22 @@ export const groupTasksTable = pgTable("group_tasks", {
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
 });
 
+export const groupTaskSubmissionsTable = pgTable("group_task_submissions", {
+  id: serial("id").primaryKey(),
+  taskId: integer("task_id").references(() => groupTasksTable.id, { onDelete: "cascade" }).notNull(),
+  groupId: integer("group_id").references(() => discussionGroupsTable.id, { onDelete: "cascade" }).notNull(),
+  studentId: integer("student_id").references(() => studentsTable.id, { onDelete: "cascade" }).notNull(),
+  fileName: text("file_name").notNull(),
+  objectPath: text("object_path").notNull(),
+  note: text("note"),
+  isApproved: boolean("is_approved").default(false),
+  approvedBy: integer("approved_by").references(() => studentsTable.id),
+  approvedAt: timestamp("approved_at"),
+  submittedAt: timestamp("submitted_at").notNull().defaultNow(),
+});
+
 export type DiscussionGroup = typeof discussionGroupsTable.$inferSelect;
 export type GroupMember = typeof groupMembersTable.$inferSelect;
 export type GroupMessage = typeof groupMessagesTable.$inferSelect;
 export type GroupTask = typeof groupTasksTable.$inferSelect;
+export type GroupTaskSubmission = typeof groupTaskSubmissionsTable.$inferSelect;
