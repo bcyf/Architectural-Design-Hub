@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Link } from "wouter";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getStudentToken, getStudentPayload } from "@/lib/student-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Plus, Users, Lock, Globe, Hash, Palette, Search,
-  BookOpen, Layers, MessageSquare, ClipboardList, ArrowRight, X
+  Plus, Users, Lock, Globe, Hash, Search,
+  BookOpen, Layers, MessageSquare, ArrowRight, X, UserPlus, Check, ChevronDown
 } from "lucide-react";
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -31,6 +31,15 @@ const COVER_COLORS = [
 
 const ROLES = ["member", "leader", "co-leader", "designer", "researcher", "reviewer"];
 
+const ROLE_COLORS: Record<string, string> = {
+  leader: "bg-amber-500/10 text-amber-600 border-amber-500/30",
+  "co-leader": "bg-blue-500/10 text-blue-600 border-blue-500/30",
+  designer: "bg-purple-500/10 text-purple-600 border-purple-500/30",
+  researcher: "bg-teal-500/10 text-teal-600 border-teal-500/30",
+  reviewer: "bg-orange-500/10 text-orange-600 border-orange-500/30",
+  member: "bg-muted text-muted-foreground border-border",
+};
+
 async function apiFetch(path: string, opts: RequestInit = {}) {
   const token = getStudentToken();
   const res = await fetch(`/api${path}`, {
@@ -46,6 +55,132 @@ interface Group {
   isPrivate: boolean; coverColor: string; memberCount: number; isMember: boolean; createdBy: number;
 }
 
+interface StudentResult {
+  id: number; firstName: string; lastName: string; email: string; studentId: string;
+}
+
+interface InvitedMember extends StudentResult {
+  role: string;
+}
+
+function MemberSearchBox({
+  invitedMembers,
+  onAdd,
+  onRemove,
+  onRoleChange,
+}: {
+  invitedMembers: InvitedMember[];
+  onAdd: (s: StudentResult) => void;
+  onRemove: (id: number) => void;
+  onRoleChange: (id: number, role: string) => void;
+}) {
+  const [q, setQ] = useState("");
+  const [results, setResults] = useState<StudentResult[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const [openRoleId, setOpenRoleId] = useState<number | null>(null);
+  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+
+  useEffect(() => {
+    clearTimeout(debounceRef.current);
+    if (q.length < 2) { setResults([]); setShowDropdown(false); return; }
+    debounceRef.current = setTimeout(async () => {
+      setLoading(true);
+      try {
+        const data = await apiFetch(`/students/search?q=${encodeURIComponent(q)}`);
+        const invitedIds = invitedMembers.map(m => m.id);
+        setResults(data.filter((s: StudentResult) => !invitedIds.includes(s.id)));
+        setShowDropdown(true);
+      } catch { setResults([]); }
+      finally { setLoading(false); }
+    }, 300);
+  }, [q]);
+
+  return (
+    <div>
+      <label className="block text-sm font-medium mb-1.5">Invite Members</label>
+
+      {/* Search input */}
+      <div className="relative">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+        <input
+          value={q}
+          onChange={e => setQ(e.target.value)}
+          onFocus={() => results.length > 0 && setShowDropdown(true)}
+          onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+          placeholder="Search by name, email or student ID…"
+          className="w-full pl-9 pr-4 py-2.5 border border-border bg-background text-sm focus:outline-none focus:border-primary transition-colors"
+        />
+        {loading && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">…</span>}
+
+        {/* Dropdown results */}
+        {showDropdown && results.length > 0 && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border shadow-lg z-30 max-h-48 overflow-y-auto">
+            {results.map(s => (
+              <button key={s.id} type="button"
+                onMouseDown={() => { onAdd(s); setQ(""); setShowDropdown(false); }}
+                className="w-full text-left px-4 py-2.5 hover:bg-muted/50 transition-colors flex items-center gap-3">
+                <div className="w-7 h-7 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
+                  {s.firstName[0]}{s.lastName[0]}
+                </div>
+                <div>
+                  <p className="text-sm font-medium">{s.firstName} {s.lastName}</p>
+                  <p className="text-xs text-muted-foreground">{s.studentId} · {s.email}</p>
+                </div>
+              </button>
+            ))}
+          </div>
+        )}
+        {showDropdown && results.length === 0 && q.length >= 2 && !loading && (
+          <div className="absolute top-full left-0 right-0 mt-1 bg-background border border-border shadow-lg z-30 px-4 py-3 text-sm text-muted-foreground">
+            No students found
+          </div>
+        )}
+      </div>
+
+      {/* Invited list */}
+      {invitedMembers.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {invitedMembers.map(m => (
+            <div key={m.id} className="flex items-center gap-2 bg-muted/40 border border-border px-3 py-2">
+              <div className="w-6 h-6 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
+                {m.firstName[0]}{m.lastName[0]}
+              </div>
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium truncate">{m.firstName} {m.lastName}</p>
+                <p className="text-xs text-muted-foreground truncate">{m.studentId}</p>
+              </div>
+              {/* Role picker */}
+              <div className="relative flex-shrink-0">
+                <button type="button" onClick={() => setOpenRoleId(openRoleId === m.id ? null : m.id)}
+                  className={`flex items-center gap-1 text-xs font-medium px-2 py-1 border capitalize ${ROLE_COLORS[m.role]}`}>
+                  {m.role} <ChevronDown className="w-3 h-3" />
+                </button>
+                {openRoleId === m.id && (
+                  <div className="absolute right-0 top-full mt-1 bg-background border border-border shadow-lg z-40 w-36">
+                    {ROLES.map(r => (
+                      <button key={r} type="button"
+                        onClick={() => { onRoleChange(m.id, r); setOpenRoleId(null); }}
+                        className={`w-full text-left px-3 py-2 text-xs capitalize hover:bg-muted/50 transition-colors flex items-center justify-between ${m.role === r ? "font-semibold text-primary" : ""}`}>
+                        {r} {m.role === r && <Check className="w-3 h-3" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <button type="button" onClick={() => onRemove(m.id)}
+                className="text-muted-foreground hover:text-destructive transition-colors flex-shrink-0">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      )}
+      <p className="text-xs text-muted-foreground mt-1.5">They'll be added instantly when the group is created.</p>
+    </div>
+  );
+}
+
 export default function Groups() {
   const qc = useQueryClient();
   const me = getStudentPayload();
@@ -55,6 +190,7 @@ export default function Groups() {
   const [showJoinModal, setShowJoinModal] = useState<Group | null>(null);
   const [joinRole, setJoinRole] = useState("member");
   const [form, setForm] = useState({ name: "", description: "", category: "general", isPrivate: false, coverColor: "#16a34a" });
+  const [invitedMembers, setInvitedMembers] = useState<InvitedMember[]>([]);
   const [formError, setFormError] = useState("");
 
   const { data: groups = [], isLoading } = useQuery<Group[]>({
@@ -63,8 +199,13 @@ export default function Groups() {
   });
 
   const createMut = useMutation({
-    mutationFn: (data: typeof form) => apiFetch("/groups", { method: "POST", body: JSON.stringify(data) }),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: ["groups"] }); setShowCreate(false); setForm({ name: "", description: "", category: "general", isPrivate: false, coverColor: "#16a34a" }); },
+    mutationFn: (payload: any) => apiFetch("/groups", { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: (newGroup) => {
+      qc.invalidateQueries({ queryKey: ["groups"] });
+      setShowCreate(false);
+      setForm({ name: "", description: "", category: "general", isPrivate: false, coverColor: "#16a34a" });
+      setInvitedMembers([]);
+    },
     onError: (e: any) => setFormError(e.message),
   });
 
@@ -72,6 +213,20 @@ export default function Groups() {
     mutationFn: ({ id, role }: { id: number; role: string }) => apiFetch(`/groups/${id}/join`, { method: "POST", body: JSON.stringify({ role }) }),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["groups"] }); setShowJoinModal(null); },
   });
+
+  function handleCreate() {
+    setFormError("");
+    createMut.mutate({
+      ...form,
+      invitedMembers: invitedMembers.map(m => ({ studentId: m.id, role: m.role })),
+    });
+  }
+
+  function closeCreate() {
+    setShowCreate(false);
+    setFormError("");
+    setInvitedMembers([]);
+  }
 
   const filtered = groups.filter(g => {
     const matchSearch = g.name.toLowerCase().includes(search.toLowerCase()) || g.description?.toLowerCase().includes(search.toLowerCase());
@@ -151,23 +306,26 @@ export default function Groups() {
       {/* Create Modal */}
       {showCreate && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <div className="bg-background border border-border w-full max-w-md max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-border">
+          <div className="bg-background border border-border w-full max-w-lg max-h-[92vh] overflow-y-auto">
+            <div className="flex items-center justify-between p-6 border-b border-border sticky top-0 bg-background z-10">
               <h2 className="font-semibold text-lg">Create Group</h2>
-              <button onClick={() => { setShowCreate(false); setFormError(""); }} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+              <button onClick={closeCreate} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
             </div>
-            <div className="p-6 space-y-4">
+            <div className="p-6 space-y-5">
               {formError && <div className="px-4 py-3 bg-destructive/10 border border-destructive/30 text-destructive text-sm">{formError}</div>}
+
               <div>
                 <label className="block text-sm font-medium mb-1.5">Group Name *</label>
                 <input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Studio IV — Thesis Group"
                   className="w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors" />
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1.5">Description</label>
-                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={3} placeholder="What is this group about?"
+                <textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} rows={2} placeholder="What is this group about?"
                   className="w-full border border-border bg-background px-3 py-2.5 text-sm focus:outline-none focus:border-primary transition-colors resize-none" />
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-1.5">Category</label>
                 <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
@@ -175,28 +333,43 @@ export default function Groups() {
                   {Object.entries(CATEGORY_LABELS).map(([v, l]) => <option key={v} value={v}>{l}</option>)}
                 </select>
               </div>
+
               <div>
                 <label className="block text-sm font-medium mb-2">Cover Color</label>
                 <div className="flex gap-2 flex-wrap">
                   {COVER_COLORS.map(c => (
-                    <button key={c} onClick={() => setForm(p => ({ ...p, coverColor: c }))}
+                    <button key={c} type="button" onClick={() => setForm(p => ({ ...p, coverColor: c }))}
                       style={{ background: c }}
                       className={`w-7 h-7 rounded-full transition-transform ${form.coverColor === c ? "ring-2 ring-offset-2 ring-foreground scale-110" : "hover:scale-110"}`} />
                   ))}
                 </div>
               </div>
+
               <label className="flex items-center gap-3 cursor-pointer">
                 <input type="checkbox" checked={form.isPrivate} onChange={e => setForm(p => ({ ...p, isPrivate: e.target.checked }))}
                   className="w-4 h-4 accent-primary" />
                 <span className="text-sm">Private group (invite only)</span>
               </label>
+
+              {/* Divider */}
+              <div className="border-t border-border pt-1">
+                <MemberSearchBox
+                  invitedMembers={invitedMembers}
+                  onAdd={s => setInvitedMembers(p => [...p, { ...s, role: "member" }])}
+                  onRemove={id => setInvitedMembers(p => p.filter(m => m.id !== id))}
+                  onRoleChange={(id, role) => setInvitedMembers(p => p.map(m => m.id === id ? { ...m, role } : m))}
+                />
+              </div>
             </div>
-            <div className="flex gap-3 p-6 pt-0">
-              <button onClick={() => { setShowCreate(false); setFormError(""); }}
+
+            <div className="flex gap-3 p-6 pt-0 sticky bottom-0 bg-background border-t border-border">
+              <button onClick={closeCreate}
                 className="flex-1 border border-border py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors">Cancel</button>
-              <button onClick={() => { setFormError(""); createMut.mutate(form); }} disabled={createMut.isPending || !form.name.trim()}
-                className="flex-1 bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors">
-                {createMut.isPending ? "Creating…" : "Create Group"}
+              <button onClick={handleCreate} disabled={createMut.isPending || !form.name.trim()}
+                className="flex-1 bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
+                {createMut.isPending ? "Creating…" : (
+                  <>Create Group {invitedMembers.length > 0 && <span className="bg-white/20 text-xs px-1.5 py-0.5">+{invitedMembers.length}</span>}</>
+                )}
               </button>
             </div>
           </div>

@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   MessageSquare, ClipboardList, Users, Send, Plus, X, ChevronDown,
   CheckCircle2, Circle, Clock, AlertCircle, Flag, Calendar, Trash2,
-  ArrowLeft, Lock, Globe, Pencil, LogOut, UserCheck
+  ArrowLeft, Lock, Globe, Pencil, LogOut, UserCheck, UserPlus, Search, Check
 } from "lucide-react";
 
 async function apiFetch(path: string, opts: RequestInit = {}) {
@@ -55,7 +55,16 @@ export default function GroupRoom() {
   const [editingTask, setEditingTask] = useState<any>(null);
   const [myRole, setMyRole] = useState<string | null>(null);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
+  const [showInvite, setShowInvite] = useState(false);
+  const [inviteQ, setInviteQ] = useState("");
+  const [inviteResults, setInviteResults] = useState<any[]>([]);
+  const [inviteLoading, setInviteLoading] = useState(false);
+  const [inviteRole, setInviteRole] = useState("member");
+  const [inviteTarget, setInviteTarget] = useState<any>(null);
+  const [inviteError, setInviteError] = useState("");
+  const [inviteSuccess, setInviteSuccess] = useState("");
   const chatEndRef = useRef<HTMLDivElement>(null);
+  const inviteDebounceRef = useRef<ReturnType<typeof setTimeout>>();
 
   const { data: group, isLoading: groupLoading, error: groupError } = useQuery({
     queryKey: ["group", groupId],
@@ -108,6 +117,37 @@ export default function GroupRoom() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["groups"] }); setLocation("/groups"); },
   });
 
+  const inviteMut = useMutation({
+    mutationFn: ({ studentId, role }: { studentId: number; role: string }) =>
+      apiFetch(`/groups/${groupId}/invite`, { method: "POST", body: JSON.stringify({ studentId, role }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["group", groupId] });
+      setInviteSuccess(`${inviteTarget?.firstName} ${inviteTarget?.lastName} added to the group!`);
+      setInviteTarget(null);
+      setInviteQ("");
+      setInviteResults([]);
+      setInviteRole("member");
+      setTimeout(() => setInviteSuccess(""), 3000);
+    },
+    onError: (e: any) => setInviteError(e.message),
+  });
+
+  function handleInviteSearch(q: string) {
+    setInviteQ(q);
+    setInviteError("");
+    clearTimeout(inviteDebounceRef.current);
+    if (q.length < 2) { setInviteResults([]); return; }
+    inviteDebounceRef.current = setTimeout(async () => {
+      setInviteLoading(true);
+      try {
+        const existingIds = new Set((group?.members || []).map((m: any) => m.studentId));
+        const data = await apiFetch(`/students/search?q=${encodeURIComponent(q)}`);
+        setInviteResults(data.filter((s: any) => !existingIds.has(s.id)));
+      } catch { setInviteResults([]); }
+      finally { setInviteLoading(false); }
+    }, 300);
+  }
+
   if (groupLoading) return <PageWrapper><div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">Loading…</div></PageWrapper>;
   if (groupError || !group) return <PageWrapper><div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">Group not found or access denied.</div></PageWrapper>;
 
@@ -115,6 +155,7 @@ export default function GroupRoom() {
   const tasksByStatus = { todo: tasks.filter((t: any) => t.status === "todo"), in_progress: tasks.filter((t: any) => t.status === "in_progress"), review: tasks.filter((t: any) => t.status === "review"), done: tasks.filter((t: any) => t.status === "done") };
 
   return (
+    <>
     <PageWrapper>
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
@@ -414,26 +455,149 @@ export default function GroupRoom() {
 
         {/* ── MEMBERS TAB ── */}
         {tab === "members" && (
-          <div className="space-y-3 max-w-2xl">
-            {group.members?.map((m: any) => (
-              <div key={m.id} className="flex items-center justify-between p-4 border border-border bg-card hover:border-primary/30 transition-colors">
-                <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
-                    style={{ background: m.studentId === me?.id ? "#16a34a" : "#6366f1" }}>
-                    {m.firstName[0]}{m.lastName[0]}
-                  </div>
-                  <div>
-                    <p className="font-medium text-sm">{m.firstName} {m.lastName} {m.studentId === me?.id && <span className="text-xs text-muted-foreground">(you)</span>}</p>
-                    <p className="text-xs text-muted-foreground">{m.studentIdCode} · {m.email}</p>
-                  </div>
-                </div>
-                <span className={`text-xs font-medium px-2.5 py-1 border capitalize ${ROLE_COLORS[m.role]}`}>{m.role}</span>
+          <div className="max-w-2xl">
+            {/* Invite button */}
+            {group.isMember && (
+              <div className="flex justify-end mb-5">
+                <button onClick={() => { setShowInvite(true); setInviteError(""); setInviteSuccess(""); setInviteTarget(null); setInviteQ(""); setInviteResults([]); }}
+                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2.5 text-sm font-semibold hover:bg-primary/90 transition-colors">
+                  <UserPlus className="w-4 h-4" /> Invite Member
+                </button>
               </div>
-            ))}
+            )}
+
+            {/* Success banner */}
+            {inviteSuccess && (
+              <div className="mb-4 flex items-center gap-2 px-4 py-3 bg-green-500/10 border border-green-500/30 text-green-700 text-sm">
+                <Check className="w-4 h-4 flex-shrink-0" /> {inviteSuccess}
+              </div>
+            )}
+
+            <div className="space-y-3">
+              {group.members?.map((m: any) => (
+                <div key={m.id} className="flex items-center justify-between p-4 border border-border bg-card hover:border-primary/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 rounded-full flex items-center justify-center text-white text-sm font-bold"
+                      style={{ background: m.studentId === me?.id ? "#16a34a" : "#6366f1" }}>
+                      {m.firstName[0]}{m.lastName[0]}
+                    </div>
+                    <div>
+                      <p className="font-medium text-sm">{m.firstName} {m.lastName} {m.studentId === me?.id && <span className="text-xs text-muted-foreground">(you)</span>}</p>
+                      <p className="text-xs text-muted-foreground">{m.studentIdCode} · {m.email}</p>
+                    </div>
+                  </div>
+                  <span className={`text-xs font-medium px-2.5 py-1 border capitalize ${ROLE_COLORS[m.role]}`}>{m.role}</span>
+                </div>
+              ))}
+            </div>
           </div>
         )}
 
       </div>
     </PageWrapper>
+
+    {/* ── INVITE MODAL ── */}
+    {showInvite && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+        <div className="bg-background border border-border w-full max-w-md">
+          <div className="flex items-center justify-between p-6 border-b border-border">
+            <div>
+              <h2 className="font-semibold text-lg">Invite Member</h2>
+              <p className="text-xs text-muted-foreground mt-0.5">Search for a student to add to this group</p>
+            </div>
+            <button onClick={() => setShowInvite(false)} className="text-muted-foreground hover:text-foreground"><X className="w-5 h-5" /></button>
+          </div>
+
+          <div className="p-6 space-y-4">
+            {inviteError && (
+              <div className="px-4 py-3 bg-destructive/10 border border-destructive/30 text-destructive text-sm">{inviteError}</div>
+            )}
+
+            {/* Search */}
+            {!inviteTarget ? (
+              <div>
+                <label className="block text-sm font-medium mb-1.5">Search Student</label>
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                  <input
+                    value={inviteQ}
+                    onChange={e => handleInviteSearch(e.target.value)}
+                    autoFocus
+                    placeholder="Name, email or student ID…"
+                    className="w-full pl-9 pr-4 py-2.5 border border-border bg-background text-sm focus:outline-none focus:border-primary transition-colors"
+                  />
+                  {inviteLoading && <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">…</span>}
+                </div>
+
+                {/* Results */}
+                {inviteResults.length > 0 && (
+                  <div className="mt-2 border border-border max-h-52 overflow-y-auto">
+                    {inviteResults.map(s => (
+                      <button key={s.id} type="button"
+                        onClick={() => { setInviteTarget(s); setInviteQ(""); setInviteResults([]); }}
+                        className="w-full text-left px-4 py-3 hover:bg-muted/50 transition-colors flex items-center gap-3 border-b border-border last:border-0">
+                        <div className="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center text-xs font-bold flex-shrink-0">
+                          {s.firstName[0]}{s.lastName[0]}
+                        </div>
+                        <div>
+                          <p className="text-sm font-medium">{s.firstName} {s.lastName}</p>
+                          <p className="text-xs text-muted-foreground">{s.studentId} · {s.email}</p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+                {inviteQ.length >= 2 && !inviteLoading && inviteResults.length === 0 && (
+                  <p className="mt-2 text-sm text-muted-foreground px-1">No students found matching "{inviteQ}"</p>
+                )}
+              </div>
+            ) : (
+              /* Confirm + role selection */
+              <div className="space-y-4">
+                <div className="flex items-center gap-3 p-3 bg-muted/40 border border-border">
+                  <div className="w-9 h-9 rounded-full bg-primary/10 text-primary flex items-center justify-center text-sm font-bold flex-shrink-0">
+                    {inviteTarget.firstName[0]}{inviteTarget.lastName[0]}
+                  </div>
+                  <div className="flex-1">
+                    <p className="font-medium text-sm">{inviteTarget.firstName} {inviteTarget.lastName}</p>
+                    <p className="text-xs text-muted-foreground">{inviteTarget.studentId} · {inviteTarget.email}</p>
+                  </div>
+                  <button onClick={() => setInviteTarget(null)} className="text-muted-foreground hover:text-foreground">
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium mb-2">Assign Role</label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {ROLES.map(r => (
+                      <button key={r} type="button" onClick={() => setInviteRole(r)}
+                        className={`py-2 px-3 text-sm border capitalize transition-colors ${inviteRole === r ? "bg-primary text-primary-foreground border-primary" : "border-border hover:border-primary"}`}>
+                        {r}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="flex gap-3 p-6 pt-0">
+            <button onClick={() => setShowInvite(false)}
+              className="flex-1 border border-border py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors">
+              Cancel
+            </button>
+            <button
+              onClick={() => { setInviteError(""); inviteMut.mutate({ studentId: inviteTarget.id, role: inviteRole }); }}
+              disabled={!inviteTarget || inviteMut.isPending}
+              className="flex-1 bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
+              <UserPlus className="w-4 h-4" />
+              {inviteMut.isPending ? "Adding…" : "Add to Group"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

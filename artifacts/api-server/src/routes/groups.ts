@@ -64,7 +64,16 @@ router.post("/groups", requireStudentAuth, async (req: Request, res: Response) =
     // Creator automatically joins as leader
     await db.insert(groupMembersTable).values({ groupId: group.id, studentId: me.id, role: "leader" });
 
-    res.status(201).json({ ...group, memberCount: 1, isMember: true });
+    // Add any invited members
+    const invitedMembers: Array<{ studentId: number; role: string }> = req.body.invitedMembers || [];
+    const validRoles = ["leader", "co-leader", "designer", "researcher", "reviewer", "member"];
+    for (const inv of invitedMembers) {
+      if (!inv.studentId || inv.studentId === me.id) continue;
+      await db.insert(groupMembersTable).values({ groupId: group.id, studentId: inv.studentId, role: validRoles.includes(inv.role) ? inv.role : "member" }).onConflictDoNothing();
+    }
+    const totalMembers = 1 + invitedMembers.filter(i => i.studentId !== me.id).length;
+
+    res.status(201).json({ ...group, memberCount: totalMembers, isMember: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to create group" });
@@ -125,6 +134,35 @@ router.post("/groups/:id/join", requireStudentAuth, async (req: Request, res: Re
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to join group" });
+  }
+});
+
+// POST /groups/:id/invite – add members to an existing group (leader/co-leader only)
+router.post("/groups/:id/invite", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  const { studentId, role } = req.body;
+
+  if (!studentId) return res.status(400).json({ error: "studentId is required" });
+
+  try {
+    const [group] = await db.select().from(discussionGroupsTable).where(eq(discussionGroupsTable.id, groupId));
+    if (!group) return res.status(404).json({ error: "Group not found" });
+
+    const myMembership = await isMember(groupId, me.id);
+    if (!myMembership) return res.status(403).json({ error: "You must be a member to invite others" });
+
+    const existing = await isMember(groupId, Number(studentId));
+    if (existing) return res.status(409).json({ error: "This student is already a member" });
+
+    const validRoles = ["leader", "co-leader", "designer", "researcher", "reviewer", "member"];
+    const memberRole = validRoles.includes(role) ? role : "member";
+
+    await db.insert(groupMembersTable).values({ groupId, studentId: Number(studentId), role: memberRole });
+    res.status(201).json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to invite member" });
   }
 });
 

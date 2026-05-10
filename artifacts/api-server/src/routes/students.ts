@@ -115,6 +115,28 @@ router.get("/students/me", requireStudentAuth, (req, res) => {
   res.json((req as any).student);
 });
 
+// GET /students/search?q=... – search students by name, email or student ID
+router.get("/students/search", requireStudentAuth, async (req, res) => {
+  const me = (req as any).student;
+  const q = String(req.query.q || "").trim().toLowerCase();
+  if (!q || q.length < 2) return res.json([]);
+  try {
+    const all = await db
+      .select({ id: studentsTable.id, firstName: studentsTable.firstName, lastName: studentsTable.lastName, email: studentsTable.email, studentId: studentsTable.studentId })
+      .from(studentsTable);
+    const results = all.filter(s =>
+      s.id !== me.id &&
+      (s.firstName.toLowerCase().includes(q) ||
+        s.lastName.toLowerCase().includes(q) ||
+        s.email.toLowerCase().includes(q) ||
+        s.studentId.toLowerCase().includes(q))
+    ).slice(0, 10);
+    res.json(results);
+  } catch (err) {
+    res.status(500).json({ error: "Search failed" });
+  }
+});
+
 // GET /students (admin only - list all students)
 router.get("/students", async (req, res) => {
   try {
