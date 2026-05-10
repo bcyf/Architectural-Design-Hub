@@ -56,10 +56,7 @@ export function attachWhiteboardWS(server: Server) {
 
   server.on("upgrade", (req: IncomingMessage, socket, head) => {
     const url = new URL(req.url || "", `http://localhost`);
-    if (!url.pathname.startsWith("/ws/whiteboard")) {
-      socket.destroy();
-      return;
-    }
+    if (!url.pathname.startsWith("/ws/whiteboard")) return; // let other handlers deal with it
     wss.handleUpgrade(req, socket, head, (ws) => {
       wss.emit("connection", ws, req);
     });

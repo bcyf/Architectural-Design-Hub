@@ -1,8 +1,8 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getStudentToken, getStudentPayload } from "@/lib/student-auth";
 import {
-  X, Minus, Plus, Eraser, Pen, Trash2, Download, Undo2,
-  MousePointer2, Square, Circle as CircleIcon, Minus as LineIcon, Users
+  X, Eraser, Pen, Trash2, Download, Undo2,
+  Square, Circle as CircleIcon, Minus as LineIcon, Users, RefreshCw
 } from "lucide-react";
 
 interface Point { x: number; y: number; }
@@ -37,25 +37,26 @@ function getWsUrl(groupId: number) {
 
 export default function Whiteboard({ groupId, onClose }: { groupId: number; onClose: () => void }) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const overlayRef = useRef<HTMLCanvasElement>(null); // live strokes from others
+  const overlayRef = useRef<HTMLCanvasElement>(null);
   const wsRef = useRef<WebSocket | null>(null);
   const strokesRef = useRef<Stroke[]>([]);
   const liveStrokesRef = useRef<Map<string, LiveStroke>>(new Map());
   const isDrawingRef = useRef(false);
   const currentStrokeRef = useRef<{ id: string; points: Point[] } | null>(null);
   const myStrokeIdsRef = useRef<string[]>([]);
+  const reconnectTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const reconnectAttemptsRef = useRef(0);
+  const mountedRef = useRef(true);
 
   const [tool, setTool] = useState<"pen" | "eraser" | "rect" | "circle" | "line">("pen");
   const [color, setColor] = useState("#000000");
   const [width, setWidth] = useState(4);
-  const [connected, setConnected] = useState(false);
   const [userCount, setUserCount] = useState(0);
   const [status, setStatus] = useState<"connecting" | "connected" | "disconnected">("connecting");
 
   const me = getStudentPayload();
 
   // ── Canvas helpers ─────────────────────────────────────────────────────────
-
   function getCtx() { return canvasRef.current?.getContext("2d") ?? null; }
   function getOverlayCtx() { return overlayRef.current?.getContext("2d") ?? null; }
 
@@ -117,29 +118,20 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
     if (!ctx || !canvas) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     for (const [, s] of liveStrokesRef.current) {
-      const fakeStroke: Stroke = { id: "", ...s };
-      drawStroke(ctx, fakeStroke);
+      drawStroke(ctx, { id: "", ...s });
     }
   }
 
-  // ── Canvas size ────────────────────────────────────────────────────────────
-
+  // ── Canvas size ─────────────────────────────────────────────────────────────
   function resizeCanvas() {
     const canvas = canvasRef.current;
     const overlay = overlayRef.current;
     const container = canvas?.parentElement;
     if (!canvas || !overlay || !container) return;
     const { width: w, height: h } = container.getBoundingClientRect();
-
-    // Save current image
     const img = canvas.toDataURL();
-
-    canvas.width = w;
-    canvas.height = h;
-    overlay.width = w;
-    overlay.height = h;
-
-    // Restore
+    canvas.width = w; canvas.height = h;
+    overlay.width = w; overlay.height = h;
     const ctx = getCtx();
     if (ctx) {
       ctx.fillStyle = "#ffffff";
@@ -150,15 +142,34 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
     }
   }
 
-  // ── WebSocket ──────────────────────────────────────────────────────────────
+  // ── WebSocket with auto-reconnect ──────────────────────────────────────────
+  function connectWs() {
+    if (!mountedRef.current) return;
+    setStatus("connecting");
 
-  useEffect(() => {
     const ws = new WebSocket(getWsUrl(groupId));
     wsRef.current = ws;
 
-    ws.onopen = () => { setConnected(true); setStatus("connected"); };
-    ws.onclose = () => { setConnected(false); setStatus("disconnected"); };
-    ws.onerror = () => setStatus("disconnected");
+    ws.onopen = () => {
+      if (!mountedRef.current) { ws.close(); return; }
+      setStatus("connected");
+      reconnectAttemptsRef.current = 0;
+    };
+
+    ws.onclose = () => {
+      if (!mountedRef.current) return;
+      setStatus("disconnected");
+      // Exponential backoff: 1s, 2s, 4s, 8s … max 30s
+      const delay = Math.min(1000 * Math.pow(2, reconnectAttemptsRef.current), 30_000);
+      reconnectAttemptsRef.current++;
+      reconnectTimerRef.current = setTimeout(() => {
+        if (mountedRef.current) connectWs();
+      }, delay);
+    };
+
+    ws.onerror = () => {
+      // onclose fires immediately after onerror — reconnect handled there
+    };
 
     ws.onmessage = (e) => {
       let msg: any;
@@ -207,12 +218,19 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
         }
       }
     };
+  }
 
-    return () => { ws.close(); };
+  useEffect(() => {
+    mountedRef.current = true;
+    connectWs();
+    return () => {
+      mountedRef.current = false;
+      if (reconnectTimerRef.current) clearTimeout(reconnectTimerRef.current);
+      wsRef.current?.close();
+    };
   }, [groupId]);
 
   // ── Canvas setup ───────────────────────────────────────────────────────────
-
   useEffect(() => {
     resizeCanvas();
     const ro = new ResizeObserver(() => resizeCanvas());
@@ -222,10 +240,15 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
   }, []);
 
   // ── Pointer events ─────────────────────────────────────────────────────────
-
   function getPos(e: React.PointerEvent): Point {
     const rect = canvasRef.current!.getBoundingClientRect();
     return { x: e.clientX - rect.left, y: e.clientY - rect.top };
+  }
+
+  function sendWs(msg: object) {
+    if (wsRef.current?.readyState === WebSocket.OPEN) {
+      wsRef.current.send(JSON.stringify(msg));
+    }
   }
 
   function onPointerDown(e: React.PointerEvent) {
@@ -237,22 +260,17 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
     currentStrokeRef.current = { id: strokeId, points: [pos] };
     myStrokeIdsRef.current.push(strokeId);
 
-    // Draw locally immediately
     const ctx = getCtx();
-    if (ctx) {
+    if (ctx && (tool === "pen" || tool === "eraser")) {
       ctx.save();
-      ctx.strokeStyle = tool === "eraser" ? "#ffffff" : color;
-      ctx.lineWidth = width;
-      ctx.lineCap = "round";
       ctx.globalCompositeOperation = tool === "eraser" ? "destination-out" : "source-over";
+      ctx.fillStyle = tool === "eraser" ? "#ffffff" : color;
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, width / 2, 0, Math.PI * 2);
-      ctx.fillStyle = tool === "eraser" ? "#ffffff" : color;
       ctx.fill();
       ctx.restore();
     }
-
-    wsRef.current?.send(JSON.stringify({ type: "point", strokeId, x: pos.x, y: pos.y, tool, color, width, first: true }));
+    sendWs({ type: "point", strokeId, x: pos.x, y: pos.y, tool, color, width, first: true });
   }
 
   function onPointerMove(e: React.PointerEvent) {
@@ -261,7 +279,6 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
     const stroke = currentStrokeRef.current;
     stroke.points.push(pos);
 
-    // Draw segment locally
     const ctx = getCtx();
     if (ctx && (tool === "pen" || tool === "eraser")) {
       const pts = stroke.points;
@@ -279,17 +296,14 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
       ctx.stroke();
       ctx.restore();
     } else if (ctx && (tool === "rect" || tool === "circle" || tool === "line")) {
-      // For shapes, preview on overlay
       const overlayCtx = getOverlayCtx();
       const overlayCanvas = overlayRef.current;
       if (overlayCtx && overlayCanvas) {
         overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
-        const fakeStroke: Stroke = { id: "", tool, color, width, points: [stroke.points[0], pos] };
-        drawStroke(overlayCtx, fakeStroke);
+        drawStroke(overlayCtx, { id: "", tool, color, width, points: [stroke.points[0], pos] });
       }
     }
-
-    wsRef.current?.send(JSON.stringify({ type: "point", strokeId: stroke.id, x: pos.x, y: pos.y, tool, color, width, first: false }));
+    sendWs({ type: "point", strokeId: stroke.id, x: pos.x, y: pos.y, tool, color, width, first: false });
   }
 
   function onPointerUp(e: React.PointerEvent) {
@@ -306,24 +320,20 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
     const finalStroke: Stroke = { id: stroke.id, tool, color, width, points: stroke.points };
     strokesRef.current.push(finalStroke);
 
-    // Clear overlay for shapes
     const overlayCtx = getOverlayCtx();
     const overlayCanvas = overlayRef.current;
     if (overlayCtx && overlayCanvas) overlayCtx.clearRect(0, 0, overlayCanvas.width, overlayCanvas.height);
 
-    // Redraw shapes onto main canvas
-    if (tool === "rect" || tool === "circle" || tool === "line") {
-      redrawAll(strokesRef.current);
-    }
+    if (tool === "rect" || tool === "circle" || tool === "line") redrawAll(strokesRef.current);
 
-    wsRef.current?.send(JSON.stringify({ type: "stroke_end", stroke: finalStroke }));
+    sendWs({ type: "stroke_end", stroke: finalStroke });
   }
 
   function handleClear() {
     if (!confirm("Clear the whiteboard for everyone?")) return;
     strokesRef.current = [];
     redrawAll([]);
-    wsRef.current?.send(JSON.stringify({ type: "clear" }));
+    sendWs({ type: "clear" });
   }
 
   function handleUndo() {
@@ -331,7 +341,7 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
     if (!myId) return;
     strokesRef.current = strokesRef.current.filter(s => s.id !== myId);
     redrawAll(strokesRef.current);
-    wsRef.current?.send(JSON.stringify({ type: "undo", strokeId: myId }));
+    sendWs({ type: "undo", strokeId: myId });
   }
 
   function handleSave() {
@@ -351,9 +361,7 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
       {/* ── Toolbar ─────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 px-4 py-2 bg-white border-b border-border shadow-sm flex-wrap">
 
-        {/* Title */}
         <span className="text-sm font-semibold text-foreground mr-2 hidden sm:block">Whiteboard</span>
-
         <div className="w-px h-6 bg-border hidden sm:block" />
 
         {/* Drawing tools */}
@@ -407,9 +415,12 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
         </button>
 
         <div className="ml-auto flex items-center gap-3">
-          {/* Connection + users */}
           <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-            <div className={`w-2 h-2 rounded-full ${status === "connected" ? "bg-green-500" : status === "connecting" ? "bg-amber-400 animate-pulse" : "bg-red-400"}`} />
+            <div className={`w-2 h-2 rounded-full ${
+              status === "connected" ? "bg-green-500"
+              : status === "connecting" ? "bg-amber-400 animate-pulse"
+              : "bg-red-400"
+            }`} />
             <Users className="w-3.5 h-3.5" />
             <span>{userCount}</span>
           </div>
@@ -425,18 +436,19 @@ export default function Whiteboard({ groupId, onClose }: { groupId: number; onCl
         <canvas ref={canvasRef} className="absolute inset-0"
           style={{ cursor: tool === "eraser" ? "cell" : "crosshair", touchAction: "none" }}
           onPointerDown={onPointerDown} onPointerMove={onPointerMove} onPointerUp={onPointerUp} />
-        {/* Overlay for live preview of others' strokes */}
         <canvas ref={overlayRef} className="absolute inset-0 pointer-events-none" />
 
-        {/* Disconnected banner */}
+        {/* Status banners */}
         {status === "disconnected" && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-destructive text-destructive-foreground text-xs px-4 py-2 shadow-md">
-            Connection lost — changes won't sync until reconnected
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-amber-500 text-white text-xs px-4 py-2 shadow-md">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            Connection lost — reconnecting…
           </div>
         )}
-        {status === "connecting" && (
-          <div className="absolute top-3 left-1/2 -translate-x-1/2 bg-amber-500 text-white text-xs px-4 py-2 shadow-md">
-            Connecting…
+        {status === "connecting" && reconnectAttemptsRef.current > 0 && (
+          <div className="absolute top-3 left-1/2 -translate-x-1/2 flex items-center gap-2 bg-amber-400 text-white text-xs px-4 py-2 shadow-md">
+            <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+            Reconnecting…
           </div>
         )}
       </div>
