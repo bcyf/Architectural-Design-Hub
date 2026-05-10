@@ -491,6 +491,12 @@ function GroupCard({ group, mine, onJoin }: { group: Group; mine?: boolean; onJo
         <div className="flex items-center gap-1.5 mb-1.5">
           <Icon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
           <span className="text-xs text-muted-foreground capitalize">{CATEGORY_LABELS[group.category]}</span>
+          {group.status === "closed" && (
+            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold text-red-600 bg-red-50 border border-red-200 px-1.5 py-0.5 rounded-full">Closed</span>
+          )}
+          {group.status === "suspended" && (
+            <span className="ml-auto inline-flex items-center gap-1 text-[10px] font-semibold text-amber-600 bg-amber-50 border border-amber-200 px-1.5 py-0.5 rounded-full">Suspended</span>
+          )}
         </div>
         <h3 className="font-semibold text-base mb-1 line-clamp-1">{group.name}</h3>
         {group.description && <p className="text-sm text-muted-foreground line-clamp-2 mb-3 flex-1">{group.description}</p>}

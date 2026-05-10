@@ -25,7 +25,8 @@ router.get("/groups", requireStudentAuth, async (req: Request, res: Response) =>
     const allGroups = await db.select({
       id: discussionGroupsTable.id, name: discussionGroupsTable.name, description: discussionGroupsTable.description,
       category: discussionGroupsTable.category, isPrivate: discussionGroupsTable.isPrivate,
-      coverColor: discussionGroupsTable.coverColor, createdBy: discussionGroupsTable.createdBy, createdAt: discussionGroupsTable.createdAt,
+      coverColor: discussionGroupsTable.coverColor, coverImage: discussionGroupsTable.coverImage,
+      status: discussionGroupsTable.status, createdBy: discussionGroupsTable.createdBy, createdAt: discussionGroupsTable.createdAt,
     }).from(discussionGroupsTable).orderBy(desc(discussionGroupsTable.createdAt));
 
     const memberCounts = await db.select({ groupId: groupMembersTable.groupId }).from(groupMembersTable);
@@ -46,7 +47,7 @@ router.get("/groups", requireStudentAuth, async (req: Request, res: Response) =>
 router.patch("/groups/:id", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
   const groupId = Number(req.params.id);
-  const { name, description, coverColor, coverImage } = req.body;
+  const { name, description, coverColor, coverImage, status } = req.body;
 
   try {
     const membership = await isMember(groupId, me.id);
@@ -60,6 +61,7 @@ router.patch("/groups/:id", requireStudentAuth, async (req: Request, res: Respon
     if (description !== undefined) updates.description = description?.trim() || null;
     if (coverColor !== undefined) updates.coverColor = coverColor;
     if (coverImage !== undefined) updates.coverImage = coverImage || null;
+    if (status === "closed") updates.status = "closed";
 
     const [updated] = await db.update(discussionGroupsTable)
       .set(updates)
@@ -70,6 +72,21 @@ router.patch("/groups/:id", requireStudentAuth, async (req: Request, res: Respon
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Failed to update group" });
+  }
+});
+
+router.delete("/groups/:id", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  try {
+    const membership = await isMember(groupId, me.id);
+    if (!membership) return res.status(403).json({ error: "Members only" });
+    if (membership.role !== "leader") return res.status(403).json({ error: "Only the group leader can delete the group" });
+    await db.delete(discussionGroupsTable).where(eq(discussionGroupsTable.id, groupId));
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete group" });
   }
 });
 

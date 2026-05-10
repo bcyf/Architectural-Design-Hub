@@ -325,6 +325,25 @@ export default function GroupRoom() {
     onSuccess: () => qc.invalidateQueries({ queryKey: ["group", groupId] }),
   });
 
+  const closeGroup = useMutation({
+    mutationFn: () => apiFetch(`/groups/${groupId}`, { method: "PATCH", body: JSON.stringify({ status: "closed" }) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["group", groupId] });
+      qc.invalidateQueries({ queryKey: ["groups"] });
+      setGroupActionDialog(null);
+    },
+  });
+
+  const deleteGroup = useMutation({
+    mutationFn: () => apiFetch(`/groups/${groupId}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["groups"] });
+      setLocation("/groups");
+    },
+  });
+
+  const [groupActionDialog, setGroupActionDialog] = useState<"close" | "delete" | null>(null);
+
   async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -403,6 +422,9 @@ export default function GroupRoom() {
   if (groupLoading) return <PageWrapper><div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">Loading…</div></PageWrapper>;
   if (groupError || !group) return <PageWrapper><div className="flex items-center justify-center min-h-[60vh] text-muted-foreground">Group not found or access denied.</div></PageWrapper>;
 
+  const isClosed    = group.status === "closed";
+  const isSuspended = group.status === "suspended";
+
   const myMember = group.members?.find((m: any) => m.studentId === me?.id);
   const isLeader = ["leader", "co-leader"].includes(myRole || "");
   const tasksByStatus = {
@@ -454,10 +476,20 @@ export default function GroupRoom() {
             <input ref={coverImgInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
           </div>
 
+          {/* Status banner for closed / suspended groups */}
+          {(isClosed || isSuspended) && (
+            <div className={`flex items-center gap-2.5 px-4 py-3 rounded-md text-sm font-medium mb-4 ${isClosed ? "bg-red-50 border border-red-200 text-red-700" : "bg-amber-50 border border-amber-200 text-amber-700"}`}>
+              {isClosed
+                ? <><X className="w-4 h-4 flex-shrink-0" /> This group has been <strong>closed</strong>. It is now read-only — no new messages or tasks can be added.</>
+                : <><X className="w-4 h-4 flex-shrink-0" /> This group has been <strong>suspended</strong> by an administrator.</>
+              }
+            </div>
+          )}
+
           <div className="flex items-start justify-between gap-4">
             <div />
             {group.isMember && (
-              <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex items-center gap-2 flex-shrink-0 flex-wrap justify-end">
                 {myMember && (
                   <div className="relative">
                     <button onClick={() => setShowRoleMenu(p => !p)}
@@ -478,14 +510,79 @@ export default function GroupRoom() {
                     )}
                   </div>
                 )}
-                <button onClick={() => { if (confirm("Leave this group?")) leaveGroup.mutate(); }}
-                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors border border-border px-3 py-1.5 hover:border-destructive/50">
-                  <LogOut className="w-3.5 h-3.5" /> Leave
-                </button>
+                {!isClosed && !isSuspended && (
+                  <button onClick={() => { if (window.confirm("Leave this group?")) leaveGroup.mutate(); }}
+                    className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors border border-border px-3 py-1.5 hover:border-destructive/50">
+                    <LogOut className="w-3.5 h-3.5" /> Leave
+                  </button>
+                )}
+                {isLeader && !isClosed && !isSuspended && (
+                  <button onClick={() => setGroupActionDialog("close")}
+                    className="flex items-center gap-1.5 text-xs text-amber-600 hover:text-amber-700 transition-colors border border-amber-200 hover:border-amber-400 bg-amber-50 px-3 py-1.5">
+                    <X className="w-3.5 h-3.5" /> Close Group
+                  </button>
+                )}
+                {myRole === "leader" && (
+                  <button onClick={() => setGroupActionDialog("delete")}
+                    className="flex items-center gap-1.5 text-xs text-red-600 hover:text-red-700 transition-colors border border-red-200 hover:border-red-400 bg-red-50 px-3 py-1.5">
+                    <Trash2 className="w-3.5 h-3.5" /> Delete Group
+                  </button>
+                )}
               </div>
             )}
           </div>
         </div>
+
+        {/* Close / Delete confirmation dialogs */}
+        {groupActionDialog && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+            <div className="bg-background border border-border rounded-lg w-full max-w-md mx-4 p-6 shadow-xl">
+              {groupActionDialog === "close" ? (
+                <>
+                  <div className="flex items-start gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center flex-shrink-0">
+                      <X className="w-5 h-5 text-amber-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-base mb-1">Close this group?</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Closing <strong>"{group.name}"</strong> will make it read-only. Members can still view past messages and tasks, but no new content can be added. This action can be reversed by an admin.
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setGroupActionDialog(null)} className="px-4 py-2 text-sm border border-border rounded hover:bg-muted/50 transition-colors">Cancel</button>
+                    <button onClick={() => closeGroup.mutate()} disabled={closeGroup.isPending}
+                      className="px-4 py-2 text-sm font-semibold rounded bg-amber-500 hover:bg-amber-600 text-white transition-colors disabled:opacity-60">
+                      {closeGroup.isPending ? "Closing…" : "Close Group"}
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-start gap-3 mb-5">
+                    <div className="w-10 h-10 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+                      <Trash2 className="w-5 h-5 text-red-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-base mb-1">Delete this group?</h3>
+                      <p className="text-sm text-muted-foreground">
+                        Permanently delete <strong>"{group.name}"</strong> and all its messages, tasks, and files. <span className="font-semibold text-red-600">This cannot be undone.</span>
+                      </p>
+                    </div>
+                  </div>
+                  <div className="flex gap-3 justify-end">
+                    <button onClick={() => setGroupActionDialog(null)} className="px-4 py-2 text-sm border border-border rounded hover:bg-muted/50 transition-colors">Cancel</button>
+                    <button onClick={() => deleteGroup.mutate()} disabled={deleteGroup.isPending}
+                      className="px-4 py-2 text-sm font-semibold rounded bg-red-600 hover:bg-red-700 text-white transition-colors disabled:opacity-60">
+                      {deleteGroup.isPending ? "Deleting…" : "Delete Permanently"}
+                    </button>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex border-b border-border mb-6">
@@ -707,7 +804,13 @@ export default function GroupRoom() {
                   </div>
                 )}
 
-                {/* Input row */}
+                {/* Input row — blocked when closed/suspended */}
+                {(isClosed || isSuspended) ? (
+                  <div className="flex items-center justify-center gap-2 h-12 border border-dashed border-border rounded text-sm text-muted-foreground">
+                    <X className="w-4 h-4" />
+                    {isClosed ? "This group is closed — messaging is disabled." : "This group is suspended — messaging is disabled."}
+                  </div>
+                ) : (
                 <form onSubmit={handleSendMessage} className="flex gap-2 items-end">
                   {!isRecording && (
                     <>
@@ -758,6 +861,7 @@ export default function GroupRoom() {
                   <input ref={photoInputRef} type="file" accept="image/*" className="hidden" onChange={handlePhotoSelect} />
                   <input ref={docInputRef} type="file" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document" className="hidden" onChange={handleDocSelect} />
                 </form>
+                )}
               </>
             )}
           </div>
