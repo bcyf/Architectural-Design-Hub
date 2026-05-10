@@ -13,6 +13,11 @@ import Blog from "@/pages/Blog";
 import Contact from "@/pages/Contact";
 import NotFound from "@/pages/not-found";
 
+// Student Auth Pages
+import StudentLogin from "@/pages/StudentLogin";
+import StudentSignup from "@/pages/StudentSignup";
+import StudentProtectedRoute from "@/components/StudentProtectedRoute";
+
 // Admin Pages
 import AdminLogin from "@/pages/admin/Login";
 import AdminLayout from "@/components/layout/AdminLayout";
@@ -51,9 +56,21 @@ function AdminPage({ children }: { children: React.ReactNode }) {
   );
 }
 
+function StudentPage({ children }: { children: React.ReactNode }) {
+  return (
+    <StudentProtectedRoute>
+      {children}
+    </StudentProtectedRoute>
+  );
+}
+
 function Router() {
   return (
     <Switch>
+      {/* Student Auth */}
+      <Route path="/login" component={StudentLogin} />
+      <Route path="/signup" component={StudentSignup} />
+
       {/* Admin Login */}
       <Route path="/admin/login" component={AdminLogin} />
 
@@ -75,14 +92,17 @@ function Router() {
       <Route path="/" component={Home} />
       <Route path="/about" component={About} />
       <Route path="/events" component={Events} />
-      <Route path="/resources" component={Resources} />
-      <Route path="/gallery" component={Gallery} />
-      <Route path="/blog" component={Blog} />
       <Route path="/contact" component={Contact} />
+      <Route path="/blog" component={Blog} />
       <Route path="/blog/:id" component={BlogPost} />
       <Route path="/faq" component={FAQ} />
       <Route path="/privacy" component={Privacy} />
       <Route path="/terms" component={Terms} />
+
+      {/* Student-protected Routes */}
+      <Route path="/resources" component={() => <StudentPage><Resources /></StudentPage>} />
+      <Route path="/gallery" component={() => <StudentPage><Gallery /></StudentPage>} />
+
       <Route component={NotFound} />
     </Switch>
   );

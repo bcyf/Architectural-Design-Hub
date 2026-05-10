@@ -13,10 +13,12 @@ import adminRouter from "./admin";
 import newsletterRouter from "./newsletter";
 import quotesRouter from "./quotes";
 import faqsRouter from "./faqs";
+import studentsRouter from "./students";
 
 const router: IRouter = Router();
 
 router.use(authRouter);
+router.use(studentsRouter);
 router.use(healthRouter);
 router.use(storageRouter);
 router.use(eventsRouter);

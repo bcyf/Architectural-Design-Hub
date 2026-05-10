@@ -1,8 +1,9 @@
 import { useState, useEffect } from "react";
 import { Link, useLocation } from "wouter";
-import { Menu, X, ArrowRight } from "lucide-react";
+import { Menu, X, ArrowRight, LogIn, LogOut, User } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import { isStudentAuthenticated, getStudentPayload, removeStudentToken } from "@/lib/student-auth";
 
 const navLinks = [
   { label: "Home", href: "/" },
@@ -16,32 +17,46 @@ const navLinks = [
 ];
 
 export function Navbar() {
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [studentLoggedIn, setStudentLoggedIn] = useState(false);
+  const [studentName, setStudentName] = useState("");
 
   useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
-    };
+    const handleScroll = () => setIsScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location]);
 
+  useEffect(() => {
+    const authed = isStudentAuthenticated();
+    setStudentLoggedIn(authed);
+    if (authed) {
+      const payload = getStudentPayload();
+      setStudentName(payload?.firstName || "Student");
+    }
+  }, [location]);
+
+  const handleStudentLogout = () => {
+    removeStudentToken();
+    setStudentLoggedIn(false);
+    setLocation("/");
+  };
+
   return (
-    <header 
+    <header
       className={`fixed top-0 w-full z-50 transition-all duration-300 ${
         isScrolled ? "bg-background/90 backdrop-blur-md border-b border-border/50 py-3 shadow-sm" : "bg-transparent py-5"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center">
-          
+
           {/* Logo */}
           <Link href="/" className="group flex items-center gap-2 z-50 relative">
             <img
@@ -55,10 +70,10 @@ export function Navbar() {
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden md:flex items-center space-x-8">
+          <nav className="hidden md:flex items-center space-x-6">
             {navLinks.map((link) => (
-              <Link 
-                key={link.href} 
+              <Link
+                key={link.href}
                 href={link.href}
                 className={`text-sm font-medium transition-colors hover:text-primary relative py-1 ${
                   location === link.href ? "text-primary" : "text-foreground/80"
@@ -66,7 +81,7 @@ export function Navbar() {
               >
                 {link.label}
                 {location === link.href && (
-                  <motion.div 
+                  <motion.div
                     layoutId="navbar-indicator"
                     className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary"
                     transition={{ type: "spring", stiffness: 300, damping: 30 }}
@@ -74,6 +89,31 @@ export function Navbar() {
                 )}
               </Link>
             ))}
+
+            {studentLoggedIn ? (
+              <div className="flex items-center gap-3 ml-2">
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                  <User className="w-3.5 h-3.5" />
+                  <span className="font-medium text-foreground">{studentName}</span>
+                </div>
+                <button
+                  onClick={handleStudentLogout}
+                  className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors border border-border px-3 py-1.5 hover:border-destructive/50"
+                  title="Sign out"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  Sign out
+                </button>
+              </div>
+            ) : (
+              <Button variant="outline" className="rounded-none gap-2 ml-2" asChild>
+                <Link href="/login">
+                  <LogIn className="w-4 h-4" />
+                  Student Login
+                </Link>
+              </Button>
+            )}
+
             <Button className="rounded-none group" asChild>
               <Link href="/events">
                 Join Us
@@ -83,7 +123,7 @@ export function Navbar() {
           </nav>
 
           {/* Mobile Toggle */}
-          <button 
+          <button
             className="md:hidden z-50 p-2 text-foreground focus:outline-none"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle Menu"
@@ -96,7 +136,7 @@ export function Navbar() {
       {/* Mobile Menu Overlay */}
       <AnimatePresence>
         {mobileMenuOpen && (
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
@@ -111,7 +151,7 @@ export function Navbar() {
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: i * 0.05 }}
                 >
-                  <Link 
+                  <Link
                     href={link.href}
                     className={`block py-2 border-b border-border/50 ${
                       location === link.href ? "text-primary" : "text-foreground"
@@ -122,12 +162,28 @@ export function Navbar() {
                 </motion.div>
               ))}
             </div>
-            <motion.div 
-              initial={{ opacity: 0 }} 
-              animate={{ opacity: 1 }} 
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
               transition={{ delay: 0.4 }}
-              className="mt-auto pt-8"
+              className="mt-auto pt-8 flex flex-col gap-3"
             >
+              {studentLoggedIn ? (
+                <button
+                  onClick={handleStudentLogout}
+                  className="w-full border border-border py-3 text-sm font-medium text-muted-foreground flex items-center justify-center gap-2 hover:text-destructive hover:border-destructive/50 transition-colors"
+                >
+                  <LogOut className="w-4 h-4" />
+                  Sign out ({studentName})
+                </button>
+              ) : (
+                <Button variant="outline" className="w-full rounded-none py-6 text-base gap-2" asChild>
+                  <Link href="/login">
+                    <LogIn className="w-4 h-4" />
+                    Student Login
+                  </Link>
+                </Button>
+              )}
               <Button className="w-full rounded-none py-6 text-lg" size="lg" asChild>
                 <Link href="/events">Become a Member</Link>
               </Button>
