@@ -3,12 +3,13 @@ import { useParams, useLocation } from "wouter";
 import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getStudentToken, getStudentPayload } from "@/lib/student-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import Whiteboard from "@/components/Whiteboard";
 import {
   MessageSquare, ClipboardList, Users, Send, Plus, X, ChevronDown,
   CheckCircle2, Circle, Clock, AlertCircle, Flag, Calendar, Trash2,
   ArrowLeft, Lock, Globe, Pencil, LogOut, UserCheck, UserPlus, Search, Check,
   Upload, FileText, FileCheck, Download, ThumbsUp, Paperclip, Eye,
-  ImagePlus, FileUp, ZoomIn
+  ImagePlus, FileUp, ZoomIn, PenLine
 } from "lucide-react";
 
 async function apiFetch(path: string, opts: RequestInit = {}) {
@@ -84,6 +85,8 @@ export default function GroupRoom() {
   const [inviteTarget, setInviteTarget] = useState<any>(null);
   const [inviteError, setInviteError] = useState("");
   const [inviteSuccess, setInviteSuccess] = useState("");
+
+  const [showWhiteboard, setShowWhiteboard] = useState(false);
 
   // Chat attachment state
   const [chatAttach, setChatAttach] = useState<{ file: File; preview: string; type: "image" | "document" } | null>(null);
@@ -330,6 +333,10 @@ export default function GroupRoom() {
                     )}
                   </div>
                 )}
+                <button onClick={() => setShowWhiteboard(true)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-primary border border-primary/40 bg-primary/5 px-3 py-1.5 hover:bg-primary/10 transition-colors">
+                  <PenLine className="w-3.5 h-3.5" /> Whiteboard
+                </button>
                 <button onClick={() => { if (confirm("Leave this group?")) leaveGroup.mutate(); }}
                   className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors border border-border px-3 py-1.5 hover:border-destructive/50">
                   <LogOut className="w-3.5 h-3.5" /> Leave
@@ -968,6 +975,11 @@ export default function GroupRoom() {
           </div>
         </div>
       </div>
+    )}
+
+    {/* ── WHITEBOARD ── */}
+    {showWhiteboard && group?.isMember && (
+      <Whiteboard groupId={groupId} onClose={() => setShowWhiteboard(false)} />
     )}
 
     {/* ── LIGHTBOX ── */}
