@@ -152,4 +152,28 @@ router.delete("/admin/groups-manage/:id", requireAuth, async (req, res) => {
   }
 });
 
+// ── Auto-Import ────────────────────────────────────────────────────────────────
+
+router.get("/admin/auto-import/preview", requireAuth, async (_req, res) => {
+  try {
+    const { previewAutoImport } = await import("../lib/auto-import");
+    const items = await previewAutoImport();
+    res.json(items);
+  } catch (err) {
+    console.error("[auto-import preview]", err);
+    res.status(500).json({ error: "Failed to fetch preview" });
+  }
+});
+
+router.post("/admin/auto-import", requireAuth, async (_req, res) => {
+  try {
+    const { runAutoImport } = await import("../lib/auto-import");
+    const result = await runAutoImport();
+    res.json(result);
+  } catch (err) {
+    console.error("[auto-import run]", err);
+    res.status(500).json({ error: "Auto-import failed" });
+  }
+});
+
 export default router;
