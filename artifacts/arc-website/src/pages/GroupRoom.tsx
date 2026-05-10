@@ -9,7 +9,7 @@ import {
   CheckCircle2, Circle, Clock, AlertCircle, Flag, Calendar, Trash2,
   ArrowLeft, Lock, Globe, Pencil, LogOut, UserCheck, UserPlus, Search, Check,
   Upload, FileText, FileCheck, Download, ThumbsUp, Paperclip, Eye,
-  ImagePlus, FileUp, ZoomIn, Mic, StopCircle, CornerUpLeft, Smile, Camera
+  ImagePlus, FileUp, ZoomIn, Mic, StopCircle, CornerUpLeft, Smile, Camera, ShieldCheck, BookOpen
 } from "lucide-react";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "✅"];
@@ -51,7 +51,7 @@ async function uploadFile(file: File): Promise<{ objectPath: string; fileName: s
   return { objectPath, fileName: file.name };
 }
 
-type Tab = "chat" | "tasks" | "members";
+type Tab = "chat" | "tasks" | "members" | "rules";
 
 const STATUS_CONFIG = {
   todo: { label: "To Do", icon: Circle, color: "text-muted-foreground" },
@@ -95,6 +95,9 @@ export default function GroupRoom() {
   const [myRole, setMyRole] = useState<string | null>(null);
   const [showRoleMenu, setShowRoleMenu] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [ruleForm, setRuleForm] = useState({ title: "", description: "" });
+  const [editingRule, setEditingRule] = useState<any>(null);
+  const [showRuleForm, setShowRuleForm] = useState(false);
   const [inviteQ, setInviteQ] = useState("");
   const [inviteResults, setInviteResults] = useState<any[]>([]);
   const [inviteLoading, setInviteLoading] = useState(false);
@@ -155,6 +158,37 @@ export default function GroupRoom() {
     queryKey: ["task-submissions", groupId, viewingTask?.id],
     queryFn: () => apiFetch(`/groups/${groupId}/tasks/${viewingTask.id}/submissions`),
     enabled: !!viewingTask,
+  });
+
+  const { data: rules = [] } = useQuery({
+    queryKey: ["group-rules", groupId],
+    queryFn: () => apiFetch(`/groups/${groupId}/rules`),
+    enabled: !!group,
+  });
+
+  const addRule = useMutation({
+    mutationFn: (data: { title: string; description: string }) =>
+      apiFetch(`/groups/${groupId}/rules`, { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["group-rules", groupId] });
+      setShowRuleForm(false);
+      setRuleForm({ title: "", description: "" });
+    },
+  });
+
+  const updateRule = useMutation({
+    mutationFn: ({ id, data }: { id: number; data: { title: string; description: string } }) =>
+      apiFetch(`/groups/${groupId}/rules/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["group-rules", groupId] });
+      setEditingRule(null);
+    },
+  });
+
+  const deleteRule = useMutation({
+    mutationFn: (id: number) =>
+      apiFetch(`/groups/${groupId}/rules/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["group-rules", groupId] }),
   });
 
   useEffect(() => { if (group) setMyRole(group.myRole); }, [group]);
@@ -590,6 +624,7 @@ export default function GroupRoom() {
             { id: "chat", icon: MessageSquare, label: "Discussion" },
             { id: "tasks", icon: ClipboardList, label: `Tasks (${tasks.length})` },
             { id: "members", icon: Users, label: `Members (${group.members?.length || 0})` },
+            { id: "rules", icon: ShieldCheck, label: `Rules${(rules as any[]).length > 0 ? ` (${(rules as any[]).length})` : ""}` },
           ].map(t => (
             <button key={t.id} onClick={() => setTab(t.id as Tab)}
               className={`flex items-center gap-2 px-5 py-3 text-sm font-medium border-b-2 transition-colors -mb-px ${tab === t.id ? "border-primary text-primary" : "border-transparent text-muted-foreground hover:text-foreground"}`}>
@@ -1108,6 +1143,136 @@ export default function GroupRoom() {
                 </div>
               ))}
             </div>
+          </div>
+        )}
+
+        {/* ── RULES TAB ── */}
+        {tab === "rules" && (
+          <div className="max-w-2xl">
+
+            {/* Banner — shown when no rules yet and user is a member */}
+            {(rules as any[]).length === 0 && !isLeader && (
+              <div className="flex items-start gap-3 px-5 py-4 bg-muted/50 border border-border rounded-lg mb-6">
+                <BookOpen className="w-5 h-5 text-muted-foreground flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-medium text-sm">No group rules set yet</p>
+                  <p className="text-sm text-muted-foreground mt-0.5">The group leaders haven't posted any rules or guidelines yet.</p>
+                </div>
+              </div>
+            )}
+
+            {/* Leader toolbar */}
+            {isLeader && !isClosed && !isSuspended && (
+              <div className="flex justify-between items-center mb-5">
+                <p className="text-sm text-muted-foreground">
+                  {(rules as any[]).length === 0 ? "No rules yet — add some to guide your members." : `${(rules as any[]).length} rule${(rules as any[]).length !== 1 ? "s" : ""} set for this group.`}
+                </p>
+                <button onClick={() => { setShowRuleForm(true); setRuleForm({ title: "", description: "" }); }}
+                  className="flex items-center gap-2 bg-primary text-primary-foreground px-4 py-2 text-sm font-semibold hover:bg-primary/90 transition-colors">
+                  <Plus className="w-4 h-4" /> Add Rule
+                </button>
+              </div>
+            )}
+
+            {/* Add / Edit rule inline form */}
+            {isLeader && showRuleForm && (
+              <div className="border border-primary/30 bg-primary/5 rounded-lg p-4 mb-5">
+                <p className="text-sm font-semibold mb-3">New Rule</p>
+                <input
+                  value={ruleForm.title}
+                  onChange={e => setRuleForm(p => ({ ...p, title: e.target.value }))}
+                  placeholder="Rule title (e.g. Be respectful)"
+                  className="w-full border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary mb-2"
+                />
+                <textarea
+                  value={ruleForm.description}
+                  onChange={e => setRuleForm(p => ({ ...p, description: e.target.value }))}
+                  placeholder="Optional — add more detail about this rule…"
+                  rows={3}
+                  className="w-full border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none mb-3"
+                />
+                <div className="flex gap-2 justify-end">
+                  <button onClick={() => setShowRuleForm(false)} className="px-3 py-1.5 text-sm border border-border rounded hover:bg-muted/50">Cancel</button>
+                  <button
+                    onClick={() => addRule.mutate(ruleForm)}
+                    disabled={!ruleForm.title.trim() || addRule.isPending}
+                    className="px-4 py-1.5 text-sm font-semibold bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-60">
+                    {addRule.isPending ? "Saving…" : "Save Rule"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* Rules list */}
+            {(rules as any[]).length > 0 && (
+              <div className="space-y-3">
+                {(rules as any[]).map((rule: any, idx: number) => (
+                  <div key={rule.id} className="border border-border bg-card rounded-lg overflow-hidden">
+                    {editingRule?.id === rule.id ? (
+                      /* Inline edit form */
+                      <div className="p-4">
+                        <input
+                          value={editingRule.title}
+                          onChange={e => setEditingRule((p: any) => ({ ...p, title: e.target.value }))}
+                          className="w-full border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary mb-2"
+                        />
+                        <textarea
+                          value={editingRule.description || ""}
+                          onChange={e => setEditingRule((p: any) => ({ ...p, description: e.target.value }))}
+                          rows={3}
+                          className="w-full border border-border bg-background px-3 py-2 text-sm focus:outline-none focus:border-primary resize-none mb-3"
+                        />
+                        <div className="flex gap-2 justify-end">
+                          <button onClick={() => setEditingRule(null)} className="px-3 py-1.5 text-sm border border-border rounded hover:bg-muted/50">Cancel</button>
+                          <button
+                            onClick={() => updateRule.mutate({ id: rule.id, data: { title: editingRule.title, description: editingRule.description || "" } })}
+                            disabled={!editingRule.title.trim() || updateRule.isPending}
+                            className="px-4 py-1.5 text-sm font-semibold bg-primary text-primary-foreground rounded hover:bg-primary/90 disabled:opacity-60">
+                            {updateRule.isPending ? "Saving…" : "Save"}
+                          </button>
+                        </div>
+                      </div>
+                    ) : (
+                      /* Display mode */
+                      <div className="flex items-start gap-0">
+                        {/* Number gutter */}
+                        <div className="w-12 flex-shrink-0 flex items-start justify-center pt-4 pb-4">
+                          <span className="w-7 h-7 rounded-full bg-primary/10 text-primary text-xs font-bold flex items-center justify-center">{idx + 1}</span>
+                        </div>
+                        {/* Content */}
+                        <div className="flex-1 py-4 pr-3">
+                          <p className="font-semibold text-sm">{rule.title}</p>
+                          {rule.description && <p className="text-sm text-muted-foreground mt-1 leading-relaxed">{rule.description}</p>}
+                        </div>
+                        {/* Leader actions */}
+                        {isLeader && !isClosed && !isSuspended && (
+                          <div className="flex items-center gap-1 pt-3.5 pr-3 flex-shrink-0">
+                            <button onClick={() => setEditingRule({ ...rule })} title="Edit rule"
+                              className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors">
+                              <Pencil className="w-3.5 h-3.5" />
+                            </button>
+                            <button
+                              onClick={() => { if (window.confirm("Delete this rule?")) deleteRule.mutate(rule.id); }}
+                              title="Delete rule"
+                              className="w-7 h-7 flex items-center justify-center rounded text-muted-foreground hover:text-destructive hover:bg-red-50 transition-colors">
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Footer acknowledgement note */}
+            {(rules as any[]).length > 0 && (
+              <div className="mt-6 flex items-start gap-2.5 text-xs text-muted-foreground border-t border-border pt-4">
+                <ShieldCheck className="w-4 h-4 flex-shrink-0 text-primary mt-0.5" />
+                <span>By participating in this group, you agree to follow these rules. Violations may result in removal from the group.</span>
+              </div>
+            )}
           </div>
         )}
 

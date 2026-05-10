@@ -77,6 +77,18 @@ export const groupTaskSubmissionsTable = pgTable("group_task_submissions", {
   submittedAt: timestamp("submitted_at").notNull().defaultNow(),
 });
 
+export const groupRulesTable = pgTable("group_rules", {
+  id: serial("id").primaryKey(),
+  groupId: integer("group_id").references(() => discussionGroupsTable.id, { onDelete: "cascade" }).notNull(),
+  title: text("title").notNull(),
+  description: text("description"),
+  position: integer("position").notNull().default(0),
+  createdBy: integer("created_by").references(() => studentsTable.id).notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
+export type GroupRule = typeof groupRulesTable.$inferSelect;
 export type DiscussionGroup = typeof discussionGroupsTable.$inferSelect;
 export type GroupMember = typeof groupMembersTable.$inferSelect;
 export type GroupMessage = typeof groupMessagesTable.$inferSelect;

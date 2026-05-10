@@ -1,6 +1,6 @@
 import { Router, type IRouter, type Request, type Response } from "express";
-import { db, discussionGroupsTable, groupMembersTable, groupMessagesTable, groupMessageReactionsTable, groupTasksTable, groupTaskSubmissionsTable, studentsTable } from "@workspace/db";
-import { eq, and, desc, inArray } from "drizzle-orm";
+import { db, discussionGroupsTable, groupMembersTable, groupMessagesTable, groupMessageReactionsTable, groupTasksTable, groupTaskSubmissionsTable, groupRulesTable, studentsTable } from "@workspace/db";
+import { eq, and, desc, inArray, asc } from "drizzle-orm";
 import { requireStudentAuth } from "./students";
 
 const router: IRouter = Router();
@@ -565,6 +565,87 @@ router.patch("/groups/:id/tasks/:taskId/submissions/:subId/approve", requireStud
     res.json(sub);
   } catch (err) {
     res.status(500).json({ error: "Failed to approve submission" });
+  }
+});
+
+// ── Group Rules ───────────────────────────────────────────────────────────────
+
+router.get("/groups/:id/rules", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  try {
+    const [group] = await db.select().from(discussionGroupsTable).where(eq(discussionGroupsTable.id, groupId));
+    if (!group) return res.status(404).json({ error: "Group not found" });
+    if (group.isPrivate) {
+      const membership = await isMember(groupId, me.id);
+      if (!membership) return res.status(403).json({ error: "Members only" });
+    }
+    const rules = await db.select().from(groupRulesTable)
+      .where(eq(groupRulesTable.groupId, groupId))
+      .orderBy(asc(groupRulesTable.position), asc(groupRulesTable.createdAt));
+    res.json(rules.map(r => ({ ...r, createdAt: r.createdAt.toISOString(), updatedAt: r.updatedAt.toISOString() })));
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to fetch rules" });
+  }
+});
+
+router.post("/groups/:id/rules", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  const { title, description } = req.body;
+  if (!title?.trim()) return res.status(400).json({ error: "Rule title is required" });
+  try {
+    const membership = await isMember(groupId, me.id);
+    if (!membership) return res.status(403).json({ error: "Members only" });
+    if (!["leader", "co-leader"].includes(membership.role)) return res.status(403).json({ error: "Only leaders can manage rules" });
+    const existing = await db.select({ id: groupRulesTable.id }).from(groupRulesTable).where(eq(groupRulesTable.groupId, groupId));
+    const [rule] = await db.insert(groupRulesTable)
+      .values({ groupId, title: title.trim(), description: description?.trim() || null, position: existing.length, createdBy: me.id })
+      .returning();
+    res.status(201).json({ ...rule, createdAt: rule.createdAt.toISOString(), updatedAt: rule.updatedAt.toISOString() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to create rule" });
+  }
+});
+
+router.patch("/groups/:id/rules/:ruleId", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  const ruleId = Number(req.params.ruleId);
+  const { title, description } = req.body;
+  try {
+    const membership = await isMember(groupId, me.id);
+    if (!membership) return res.status(403).json({ error: "Members only" });
+    if (!["leader", "co-leader"].includes(membership.role)) return res.status(403).json({ error: "Only leaders can manage rules" });
+    const updates: Record<string, any> = { updatedAt: new Date() };
+    if (title !== undefined) updates.title = title.trim();
+    if (description !== undefined) updates.description = description?.trim() || null;
+    const [updated] = await db.update(groupRulesTable).set(updates)
+      .where(and(eq(groupRulesTable.id, ruleId), eq(groupRulesTable.groupId, groupId)))
+      .returning();
+    if (!updated) return res.status(404).json({ error: "Rule not found" });
+    res.json({ ...updated, createdAt: updated.createdAt.toISOString(), updatedAt: updated.updatedAt.toISOString() });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update rule" });
+  }
+});
+
+router.delete("/groups/:id/rules/:ruleId", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  const ruleId = Number(req.params.ruleId);
+  try {
+    const membership = await isMember(groupId, me.id);
+    if (!membership) return res.status(403).json({ error: "Members only" });
+    if (!["leader", "co-leader"].includes(membership.role)) return res.status(403).json({ error: "Only leaders can manage rules" });
+    await db.delete(groupRulesTable).where(and(eq(groupRulesTable.id, ruleId), eq(groupRulesTable.groupId, groupId)));
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to delete rule" });
   }
 });
 
