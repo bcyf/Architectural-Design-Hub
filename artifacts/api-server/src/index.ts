@@ -1,6 +1,7 @@
 import { createServer } from "http";
 import app from "./app";
 import { attachWhiteboardWS } from "./whiteboard-ws";
+import { attachCallWS } from "./call-ws";
 
 const rawPort = process.env["PORT"];
 
@@ -18,6 +19,7 @@ if (Number.isNaN(port) || port <= 0) {
 
 const server = createServer(app);
 attachWhiteboardWS(server);
+attachCallWS(server);
 
 server.listen(port, () => {
   console.log(`Server listening on port ${port}`);

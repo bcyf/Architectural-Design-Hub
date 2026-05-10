@@ -4,6 +4,7 @@ import { PageWrapper } from "@/components/layout/PageWrapper";
 import { getStudentToken, getStudentPayload } from "@/lib/student-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import Whiteboard from "@/components/Whiteboard";
+import GroupCall from "@/components/GroupCall";
 import {
   MessageSquare, ClipboardList, Users, Send, Plus, X, ChevronDown,
   CheckCircle2, Circle, Clock, AlertCircle, Flag, Calendar, Trash2,
@@ -359,6 +360,13 @@ export default function GroupRoom() {
             </button>
           ))}
         </div>
+
+        {/* ── CALL PANEL (always visible for members) ── */}
+        {group.isMember && (
+          <div className="mb-4">
+            <GroupCall groupId={groupId} groupName={group.name} />
+          </div>
+        )}
 
         {/* ── CHAT TAB ── */}
         {tab === "chat" && (
