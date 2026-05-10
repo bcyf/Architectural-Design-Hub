@@ -10,6 +10,9 @@ export const studentsTable = pgTable("students", {
   studentId: text("student_id").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   isApproved: boolean("is_approved").notNull().default(true),
+  collegeLevel: text("college_level").default("1st Year"),
+  bio: text("bio"),
+  profilePicture: text("profile_picture"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

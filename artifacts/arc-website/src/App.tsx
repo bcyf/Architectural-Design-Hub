@@ -19,6 +19,7 @@ import StudentSignup from "@/pages/StudentSignup";
 import StudentProtectedRoute from "@/components/StudentProtectedRoute";
 import Groups from "@/pages/Groups";
 import GroupRoom from "@/pages/GroupRoom";
+import StudentProfile from "@/pages/StudentProfile";
 
 // Admin Pages
 import AdminLogin from "@/pages/admin/Login";
@@ -106,6 +107,7 @@ function Router() {
       <Route path="/gallery" component={() => <StudentPage><Gallery /></StudentPage>} />
       <Route path="/groups" component={() => <StudentPage><Groups /></StudentPage>} />
       <Route path="/groups/:id" component={() => <StudentPage><GroupRoom /></StudentPage>} />
+      <Route path="/profile" component={() => <StudentPage><StudentProfile /></StudentPage>} />
 
       <Route component={NotFound} />
     </Switch>
