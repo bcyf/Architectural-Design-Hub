@@ -180,27 +180,44 @@ router.post("/admin/auto-import", requireAuth, async (_req, res) => {
 
 /**
  * POST /admin/resources/download-all-to-storage  (MUST be before /:id route)
- * Bulk download all internet-archive resources that don't yet have a stored file.
- * Runs sequentially to avoid hammering the network.
+ *
+ * Uses Server-Sent Events so the connection stays alive for large batches.
+ * The proxy timeout is avoided because we continuously stream progress events.
+ * Each event is: data: <JSON>\n\n
+ * Event types: "start" | "progress" | "result" | "complete" | "error"
  */
 router.post("/admin/resources/download-all-to-storage", requireAuth, async (_req, res) => {
+  // SSE headers — X-Accel-Buffering disables nginx/Replit proxy buffering
+  res.setHeader("Content-Type", "text/event-stream");
+  res.setHeader("Cache-Control", "no-cache");
+  res.setHeader("Connection", "keep-alive");
+  res.setHeader("X-Accel-Buffering", "no");
+  res.flushHeaders();
+
+  const send = (data: object) => {
+    res.write(`data: ${JSON.stringify(data)}\n\n`);
+  };
+
+  // Heartbeat keeps the connection alive through any intermediate proxies
+  const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 20000);
+
   try {
     const { resolveArchiveFileUrl, downloadUrlToStorage } = await import("../lib/download-to-storage");
 
     const pending = await db
       .select()
       .from(resourcesTable)
-      .where(
-        sql`tags LIKE '%internet-archive%' AND stored_object_path IS NULL`
-      );
+      .where(sql`tags LIKE '%internet-archive%' AND stored_object_path IS NULL`);
 
-    console.log(`[download-all] ${pending.length} resources need downloading`);
+    console.log(`[download-all] ${pending.length} resources to download`);
+    send({ type: "start", total: pending.length });
 
     let downloaded = 0;
     let failed = 0;
-    const results: Array<{ id: number; title: string; status: string; objectPath?: string }> = [];
 
     for (const resource of pending) {
+      send({ type: "progress", id: resource.id, title: resource.title, current: downloaded + failed + 1, total: pending.length });
+
       try {
         const fileUrl = resource.fileUrl ?? "";
         let downloadUrl: string;
@@ -209,10 +226,8 @@ router.post("/admin/resources/download-all-to-storage", requireAuth, async (_req
         if (fileUrl.includes("archive.org/details/")) {
           const identifier = fileUrl.split("/details/")[1]?.split("?")[0];
           if (!identifier) throw new Error("Cannot parse identifier");
-
           const resolved = await resolveArchiveFileUrl(identifier);
-          if (!resolved) throw new Error("No downloadable file found");
-
+          if (!resolved) throw new Error("No downloadable file found on Archive.org");
           downloadUrl = resolved.url;
           contentType = resolved.contentType;
         } else if (fileUrl.startsWith("http")) {
@@ -223,25 +238,25 @@ router.post("/admin/resources/download-all-to-storage", requireAuth, async (_req
         }
 
         const result = await downloadUrlToStorage(downloadUrl, contentType);
-        await db
-          .update(resourcesTable)
-          .set({ storedObjectPath: result.objectPath })
-          .where(eq(resourcesTable.id, resource.id));
+        await db.update(resourcesTable).set({ storedObjectPath: result.objectPath }).where(eq(resourcesTable.id, resource.id));
 
         downloaded++;
-        results.push({ id: resource.id, title: resource.title, status: "ok", objectPath: result.objectPath });
+        send({ type: "result", id: resource.id, title: resource.title, status: "ok", objectPath: result.objectPath, sizeBytes: result.sizeBytes });
         console.log(`[download-all] ✓ ${resource.id} ${resource.title}`);
       } catch (err: any) {
         failed++;
-        results.push({ id: resource.id, title: resource.title, status: `error: ${err?.message}` });
+        send({ type: "result", id: resource.id, title: resource.title, status: "error", message: err?.message ?? "Unknown error" });
         console.error(`[download-all] ✗ ${resource.id} ${resource.title}:`, err?.message);
       }
     }
 
-    res.json({ total: pending.length, downloaded, failed, results });
+    send({ type: "complete", total: pending.length, downloaded, failed });
   } catch (err: any) {
-    console.error("[download-all]", err);
-    res.status(500).json({ error: err?.message ?? "Bulk download failed" });
+    console.error("[download-all] Fatal:", err);
+    send({ type: "error", message: err?.message ?? "Bulk download failed" });
+  } finally {
+    clearInterval(heartbeat);
+    res.end();
   }
 });
 
