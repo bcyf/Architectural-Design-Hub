@@ -8,6 +8,7 @@ export const resourcesTable = pgTable("resources", {
   description: text("description").notNull(),
   type: text("type").notNull().default("guide"),
   fileUrl: text("file_url"),
+  imageUrl: text("image_url"),
   software: text("software"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

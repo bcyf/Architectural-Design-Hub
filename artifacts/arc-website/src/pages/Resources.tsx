@@ -24,8 +24,15 @@ export default function Resources() {
 
   const renderResourceCard = (resource: any) => (
     <div key={resource.id} className="border border-border hover:border-primary transition-colors bg-card flex flex-col h-full group">
-      {/* Video embed preview */}
-      {resource.type === "video" && resource.fileUrl && isVideo(resource.fileUrl) && (
+      {/* Uploaded image banner */}
+      {resource.imageUrl && (
+        <div className="w-full h-44 overflow-hidden">
+          <img src={resource.imageUrl} alt={resource.title} className="w-full h-full object-cover" />
+        </div>
+      )}
+
+      {/* Video embed preview (only if no image) */}
+      {!resource.imageUrl && resource.type === "video" && resource.fileUrl && isVideo(resource.fileUrl) && (
         <div className="w-full aspect-video bg-black overflow-hidden">
           <video
             src={resource.fileUrl}

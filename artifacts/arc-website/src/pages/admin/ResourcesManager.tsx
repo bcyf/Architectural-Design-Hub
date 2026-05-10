@@ -17,6 +17,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
 import { FileUploader } from "@/components/admin/FileUploader";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,7 @@ const resourceSchema = z.object({
   description: z.string().min(1, "Required"),
   type: z.string().min(1, "Required"),
   fileUrl: z.string().optional().or(z.literal("")),
+  imageUrl: z.string().optional().or(z.literal("")),
   software: z.string().optional().or(z.literal("")),
 });
 
@@ -46,12 +48,12 @@ export default function ResourcesManager() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(resourceSchema),
-    defaultValues: { title: "", description: "", type: "guide", fileUrl: "", software: "" },
+    defaultValues: { title: "", description: "", type: "guide", fileUrl: "", imageUrl: "", software: "" },
   });
 
   const handleOpenCreate = () => {
     setEditingResource(null);
-    form.reset({ title: "", description: "", type: "guide", fileUrl: "", software: "" });
+    form.reset({ title: "", description: "", type: "guide", fileUrl: "", imageUrl: "", software: "" });
     setIsDialogOpen(true);
   };
 
@@ -59,7 +61,7 @@ export default function ResourcesManager() {
     setEditingResource(resource);
     form.reset({
       title: resource.title, description: resource.description, type: resource.type,
-      fileUrl: resource.fileUrl || "", software: resource.software || ""
+      fileUrl: resource.fileUrl || "", imageUrl: (resource as any).imageUrl || "", software: resource.software || ""
     });
     setIsDialogOpen(true);
   };
@@ -204,6 +206,16 @@ export default function ResourcesManager() {
                   <FormMessage />
                 </FormItem>
               )} />
+              <FormField control={form.control} name="imageUrl" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Resource Image (Optional)</FormLabel>
+                  <FormControl>
+                    <ImageUploader value={field.value || ""} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
+
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
                 <Button type="submit" disabled={createMutation.isPending || updateMutation.isPending}>Save</Button>
