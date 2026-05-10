@@ -37,7 +37,7 @@ await sharp({
     width: OG_WIDTH,
     height: OG_HEIGHT,
     channels: 3,
-    background: { r: 255, g: 255, b: 255 },
+    background: { r: 22, g: 163, b: 74 },
   },
 })
   .composite([{ input: resizedLogo, left, top }])
