@@ -6,7 +6,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   FileText, Download, Briefcase, ExternalLink,
   MonitorPlay, BookOpen, Video, File, Play,
-  Link2, Mail, Check
+  Link2, Mail, Check, Search, X as XIcon
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -100,6 +100,24 @@ export default function Resources() {
   const { data: resources, isLoading: resourcesLoading } = useListResources();
   const { data: jobs, isLoading: jobsLoading } = useListJobs();
   const [activeVideo, setActiveVideo] = useState<ActiveVideo | null>(null);
+  const [search, setSearch] = useState("");
+
+  const q = search.toLowerCase().trim();
+  const filteredResources = resources?.filter(r =>
+    !q ||
+    r.title.toLowerCase().includes(q) ||
+    r.description.toLowerCase().includes(q) ||
+    r.type.toLowerCase().includes(q) ||
+    (r.software || "").toLowerCase().includes(q)
+  );
+  const filteredJobs = jobs?.filter(j =>
+    !q ||
+    j.title.toLowerCase().includes(q) ||
+    j.company.toLowerCase().includes(q) ||
+    j.location.toLowerCase().includes(q) ||
+    j.type.toLowerCase().includes(q) ||
+    j.description.toLowerCase().includes(q)
+  );
 
   const handleWatchVideo = (resource: any) => {
     if (resource.fileUrl && isDirectVideo(resource.fileUrl)) {
@@ -260,6 +278,27 @@ export default function Resources() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+
+        {/* Search bar */}
+        <div className="relative mb-10 max-w-xl">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground pointer-events-none" />
+          <input
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            placeholder="Search resources, jobs, types…"
+            className="w-full pl-11 pr-10 py-3 border border-border bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:border-primary text-sm"
+          />
+          {search && (
+            <button
+              onClick={() => setSearch("")}
+              className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-muted-foreground hover:text-foreground transition-colors"
+            >
+              <XIcon className="w-4 h-4" />
+            </button>
+          )}
+        </div>
+
         <Tabs defaultValue="resources" className="w-full">
           <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b border-border mb-12 rounded-none">
             <TabsTrigger
@@ -282,11 +321,11 @@ export default function Resources() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {resourcesLoading ? (
                 [1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-muted animate-pulse" />)
-              ) : resources && resources.length > 0 ? (
-                resources.map(renderResourceCard)
+              ) : filteredResources && filteredResources.length > 0 ? (
+                filteredResources.map(renderResourceCard)
               ) : (
                 <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed border-border">
-                  No resources available right now.
+                  {q ? `No resources match "${search}".` : "No resources available right now."}
                 </div>
               )}
             </div>
@@ -296,11 +335,11 @@ export default function Resources() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {jobsLoading ? (
                 [1, 2, 3].map(i => <div key={i} className="h-64 bg-muted animate-pulse" />)
-              ) : jobs && jobs.length > 0 ? (
-                jobs.map(renderJobCard)
+              ) : filteredJobs && filteredJobs.length > 0 ? (
+                filteredJobs.map(renderJobCard)
               ) : (
                 <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed border-border">
-                  No job postings available right now.
+                  {q ? `No jobs match "${search}".` : "No job postings available right now."}
                 </div>
               )}
             </div>
