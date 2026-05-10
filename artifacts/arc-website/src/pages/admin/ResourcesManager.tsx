@@ -151,10 +151,11 @@ export default function ResourcesManager() {
       </div>
 
       <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <DialogContent>
+        <DialogContent className="max-h-[90vh] flex flex-col">
           <DialogHeader>
             <DialogTitle>{editingResource ? "Edit Resource" : "Add Resource"}</DialogTitle>
           </DialogHeader>
+          <div className="overflow-y-auto flex-1 pr-1">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               <FormField control={form.control} name="title" render={({ field }) => (
@@ -222,6 +223,7 @@ export default function ResourcesManager() {
               </div>
             </form>
           </Form>
+          </div>
         </DialogContent>
       </Dialog>
 
