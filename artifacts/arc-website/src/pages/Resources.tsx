@@ -101,22 +101,30 @@ export default function Resources() {
   const { data: jobs, isLoading: jobsLoading } = useListJobs();
   const [activeVideo, setActiveVideo] = useState<ActiveVideo | null>(null);
   const [search, setSearch] = useState("");
+  const [resourceFilter, setResourceFilter] = useState("all");
+  const [jobFilter, setJobFilter] = useState("all");
 
   const q = search.toLowerCase().trim();
+
+  const resourceTypes = ["all", ...Array.from(new Set(resources?.map(r => r.type) ?? []))];
+  const jobTypes = ["all", ...Array.from(new Set(jobs?.map(j => j.type) ?? []))];
+
   const filteredResources = resources?.filter(r =>
-    !q ||
-    r.title.toLowerCase().includes(q) ||
-    r.description.toLowerCase().includes(q) ||
-    r.type.toLowerCase().includes(q) ||
-    (r.software || "").toLowerCase().includes(q)
+    (resourceFilter === "all" || r.type === resourceFilter) &&
+    (!q ||
+      r.title.toLowerCase().includes(q) ||
+      r.description.toLowerCase().includes(q) ||
+      r.type.toLowerCase().includes(q) ||
+      (r.software || "").toLowerCase().includes(q))
   );
   const filteredJobs = jobs?.filter(j =>
-    !q ||
-    j.title.toLowerCase().includes(q) ||
-    j.company.toLowerCase().includes(q) ||
-    j.location.toLowerCase().includes(q) ||
-    j.type.toLowerCase().includes(q) ||
-    j.description.toLowerCase().includes(q)
+    (jobFilter === "all" || j.type === jobFilter) &&
+    (!q ||
+      j.title.toLowerCase().includes(q) ||
+      j.company.toLowerCase().includes(q) ||
+      j.location.toLowerCase().includes(q) ||
+      j.type.toLowerCase().includes(q) ||
+      j.description.toLowerCase().includes(q))
   );
 
   const handleWatchVideo = (resource: any) => {
@@ -318,6 +326,23 @@ export default function Resources() {
           </TabsList>
 
           <TabsContent value="resources" className="mt-0">
+            {/* Resource type filter chips */}
+            <div className="flex flex-wrap gap-2 mb-8">
+              {resourceTypes.map(type => (
+                <button
+                  key={type}
+                  onClick={() => setResourceFilter(type)}
+                  className={`px-4 py-1.5 text-xs font-medium uppercase tracking-wider border transition-colors ${
+                    resourceFilter === type
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground"
+                  }`}
+                >
+                  {type === "all" ? "All" : type}
+                </button>
+              ))}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
               {resourcesLoading ? (
                 [1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-muted animate-pulse" />)
@@ -332,6 +357,23 @@ export default function Resources() {
           </TabsContent>
 
           <TabsContent value="jobs" className="mt-0">
+            {/* Job type filter chips */}
+            <div className="flex flex-wrap gap-2 mb-8">
+              {jobTypes.map(type => (
+                <button
+                  key={type}
+                  onClick={() => setJobFilter(type)}
+                  className={`px-4 py-1.5 text-xs font-medium uppercase tracking-wider border transition-colors ${
+                    jobFilter === type
+                      ? "bg-primary text-primary-foreground border-primary"
+                      : "bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground"
+                  }`}
+                >
+                  {type === "all" ? "All" : type}
+                </button>
+              ))}
+            </div>
+
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
               {jobsLoading ? (
                 [1, 2, 3].map(i => <div key={i} className="h-64 bg-muted animate-pulse" />)
