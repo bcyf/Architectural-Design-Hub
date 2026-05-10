@@ -1,52 +1,47 @@
 import { db, resourcesTable } from "@workspace/db";
+import { like } from "drizzle-orm";
 
 const ARCHIVE_SEARCH = "https://archive.org/advancedsearch.php";
 
 const CATEGORY_KEYWORDS: [string, string][] = [
-  ["history of architecture", "history-theory"],
   ["architectural history", "history-theory"],
+  ["history of architecture", "history-theory"],
   ["history", "history-theory"],
   ["theory", "history-theory"],
-  ["philosophy of architecture", "history-theory"],
   ["design method", "design-methods"],
   ["architectural design", "design-methods"],
   ["drawing", "design-methods"],
   ["structural analysis", "structures"],
-  ["structural design", "structures"],
+  ["structural", "structures"],
   ["structure", "structures"],
   ["engineering", "structures"],
   ["concrete", "structures"],
-  ["steel construction", "structures"],
   ["building material", "materials"],
   ["materials", "materials"],
   ["construction", "materials"],
   ["masonry", "materials"],
-  ["timber", "materials"],
   ["bim", "digital-tools"],
   ["revit", "digital-tools"],
   ["autocad", "digital-tools"],
-  ["digital architecture", "digital-tools"],
+  ["digital", "digital-tools"],
   ["parametric", "digital-tools"],
   ["professional practice", "professional-practice"],
   ["architectural practice", "professional-practice"],
-  ["building law", "professional-practice"],
   ["urban design", "urban-design"],
   ["urbanism", "urban-design"],
-  ["city planning", "urban-design"],
   ["urban planning", "urban-design"],
+  ["city planning", "urban-design"],
   ["landscape", "urban-design"],
   ["interior design", "interior"],
   ["interior architecture", "interior"],
-  ["interiors", "interior"],
+  ["interior", "interior"],
   ["sustainable architecture", "sustainability"],
   ["green building", "sustainability"],
   ["sustainability", "sustainability"],
   ["passive design", "sustainability"],
-  ["energy efficiency", "sustainability"],
   ["rendering", "presentation"],
-  ["architectural presentation", "presentation"],
   ["visualization", "presentation"],
-  ["architectural drawing", "presentation"],
+  ["presentation", "presentation"],
 ];
 
 function detectCategory(title: string, description: string, subjects: string[]): string | null {
@@ -71,10 +66,11 @@ interface ArchiveDoc {
   downloads?: number;
 }
 
-async function searchArchive(query: string, mediatype: "texts" | "movies", rows = 30): Promise<ArchiveDoc[]> {
+// mediatype MUST be inside the q parameter for IA search API
+async function searchArchive(q: string, rows = 25): Promise<ArchiveDoc[]> {
   try {
-    const qs = [
-      `q=${encodeURIComponent(query)}`,
+    const params = [
+      `q=${encodeURIComponent(q)}`,
       `fl[]=identifier`,
       `fl[]=title`,
       `fl[]=description`,
@@ -83,19 +79,25 @@ async function searchArchive(query: string, mediatype: "texts" | "movies", rows 
       `rows=${rows}`,
       `sort[]=downloads+desc`,
       `output=json`,
-      `mediatype=${mediatype}`,
     ].join("&");
 
-    const res = await fetch(`${ARCHIVE_SEARCH}?${qs}`, {
-      signal: AbortSignal.timeout(20000),
+    const url = `${ARCHIVE_SEARCH}?${params}`;
+    console.log(`[auto-import] Searching: ${url.substring(0, 120)}…`);
+
+    const res = await fetch(url, {
+      signal: AbortSignal.timeout(25000),
       headers: { "User-Agent": "ASA-FBC-ResourceImporter/1.0" },
     });
 
-    if (!res.ok) throw new Error(`Archive API ${res.status}`);
+    console.log(`[auto-import] HTTP ${res.status} ${res.statusText}`);
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
     const data = await res.json();
-    return (data.response?.docs ?? []) as ArchiveDoc[];
+    const docs = data.response?.docs ?? [];
+    console.log(`[auto-import] Got ${docs.length} results`);
+    return docs as ArchiveDoc[];
   } catch (err) {
-    console.error(`[auto-import] Archive search failed (${mediatype}):`, err);
+    console.error(`[auto-import] Search failed:`, err);
     return [];
   }
 }
@@ -119,12 +121,15 @@ export interface ImportResult {
   items: Array<{ title: string; type: string }>;
 }
 
-function docsToItems(docs: ArchiveDoc[], type: "book" | "video"): PreviewItem[] {
+function docsToItems(docs: ArchiveDoc[], type: "book" | "video" | "guide"): PreviewItem[] {
   const items: PreviewItem[] = [];
   for (const doc of docs) {
     if (!doc.identifier || !doc.title) continue;
     const title = cleanText(doc.title, 150);
-    const description = cleanText(doc.description, 500) || `Free architectural ${type} resource from Internet Archive.`;
+    if (!title) continue;
+    const description =
+      cleanText(doc.description, 500) ||
+      `Free architectural ${type} from Internet Archive.`;
     const subjects = Array.isArray(doc.subject)
       ? (doc.subject as string[])
       : doc.subject
@@ -147,20 +152,18 @@ function docsToItems(docs: ArchiveDoc[], type: "book" | "video"): PreviewItem[] 
 }
 
 export async function previewAutoImport(): Promise<PreviewItem[]> {
+  // Each query includes mediatype: inside the q string
   const [bookDocs, videoDocs, guideDocs] = await Promise.all([
     searchArchive(
-      'subject:(architecture) AND NOT collection:inlibrary AND language:English AND -subject:"science fiction"',
-      "texts",
+      'subject:(architecture) AND mediatype:texts AND language:English AND NOT collection:inlibrary',
       30
     ),
     searchArchive(
-      '(subject:architecture OR subject:"architectural design") AND language:English',
-      "movies",
+      '(subject:architecture OR subject:"architectural design" OR title:architecture) AND mediatype:movies AND language:English',
       20
     ),
     searchArchive(
-      'subject:("architectural drawing" OR "architectural design" OR "urban planning") AND mediatype:texts AND NOT collection:inlibrary',
-      "texts",
+      '(subject:"architectural drawing" OR subject:"urban design" OR subject:"interior design") AND mediatype:texts AND language:English AND NOT collection:inlibrary',
       20
     ),
   ]);
@@ -179,7 +182,11 @@ export async function previewAutoImport(): Promise<PreviewItem[]> {
     }
   }
 
-  // Mark which ones already exist in DB
+  console.log(`[auto-import] Total unique candidates: ${rawItems.length}`);
+
+  if (rawItems.length === 0) return [];
+
+  // Mark duplicates against what's in DB
   const existing = await db
     .select({ fileUrl: resourcesTable.fileUrl })
     .from(resourcesTable);
@@ -194,6 +201,8 @@ export async function previewAutoImport(): Promise<PreviewItem[]> {
 export async function runAutoImport(): Promise<ImportResult> {
   const allItems = await previewAutoImport();
   const newItems = allItems.filter((i) => i.isNew);
+
+  console.log(`[auto-import] ${newItems.length} new items to insert`);
 
   let imported = 0;
   let errors = 0;
@@ -213,15 +222,10 @@ export async function runAutoImport(): Promise<ImportResult> {
       imported++;
       importedItems.push({ title: item.title, type: item.type });
     } catch (err) {
-      console.error("[auto-import] Failed to insert:", item.title, err);
+      console.error("[auto-import] Insert failed:", item.title, err);
       errors++;
     }
   }
 
-  return {
-    imported,
-    skipped: allItems.length - newItems.length,
-    errors,
-    items: importedItems,
-  };
+  return { imported, skipped: allItems.length - newItems.length, errors, items: importedItems };
 }

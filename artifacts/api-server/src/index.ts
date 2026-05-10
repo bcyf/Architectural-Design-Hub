@@ -1,4 +1,6 @@
 import app from "./app";
+import { db, resourcesTable } from "@workspace/db";
+import { like, count } from "drizzle-orm";
 
 const rawPort = process.env["PORT"];
 
@@ -16,4 +18,25 @@ if (Number.isNaN(port) || port <= 0) {
 
 app.listen(port, () => {
   console.log(`Server listening on port ${port}`);
+  scheduleAutoImport();
 });
+
+async function scheduleAutoImport() {
+  try {
+    const [{ total }] = await db
+      .select({ total: count() })
+      .from(resourcesTable)
+      .where(like(resourcesTable.tags, "%internet-archive%"));
+
+    if (Number(total) < 10) {
+      console.log(`[auto-import] Only ${total} imported resources found — running auto-import…`);
+      const { runAutoImport } = await import("./lib/auto-import");
+      const result = await runAutoImport();
+      console.log(`[auto-import] Done: ${result.imported} imported, ${result.skipped} skipped, ${result.errors} errors`);
+    } else {
+      console.log(`[auto-import] ${total} resources already in library — skipping startup import`);
+    }
+  } catch (err) {
+    console.error("[auto-import] Startup import error:", err);
+  }
+}
