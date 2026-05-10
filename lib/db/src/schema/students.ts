@@ -1,6 +1,8 @@
-import { pgTable, text, serial, timestamp, boolean } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, boolean, pgEnum } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+
+export const accountStatusEnum = pgEnum("account_status", ["active", "suspended", "closed"]);
 
 export const studentsTable = pgTable("students", {
   id: serial("id").primaryKey(),
@@ -10,6 +12,7 @@ export const studentsTable = pgTable("students", {
   studentId: text("student_id").notNull().unique(),
   passwordHash: text("password_hash").notNull(),
   isApproved: boolean("is_approved").notNull().default(true),
+  status: accountStatusEnum("status").notNull().default("active"),
   collegeLevel: text("college_level").default("1st Year"),
   bio: text("bio"),
   profilePicture: text("profile_picture"),

@@ -37,6 +37,7 @@ import AdminSettings from "@/pages/admin/Settings";
 import AdminNewsletter from "@/pages/admin/NewsletterManager";
 import AdminQuotes from "@/pages/admin/QuotesManager";
 import AdminFaq from "@/pages/admin/FaqManager";
+import AdminAccounts from "@/pages/admin/AccountsManager";
 import FAQ from "@/pages/FAQ";
 import BlogPost from "@/pages/BlogPost";
 import Privacy from "@/pages/Privacy";
@@ -90,6 +91,7 @@ function Router() {
       <Route path="/admin/newsletter" component={() => <AdminPage><AdminNewsletter /></AdminPage>} />
       <Route path="/admin/quotes" component={() => <AdminPage><AdminQuotes /></AdminPage>} />
       <Route path="/admin/faq" component={() => <AdminPage><AdminFaq /></AdminPage>} />
+      <Route path="/admin/accounts" component={() => <AdminPage><AdminAccounts /></AdminPage>} />
 
       {/* Public Routes */}
       <Route path="/" component={Home} />

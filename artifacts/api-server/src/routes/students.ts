@@ -71,6 +71,8 @@ router.post("/students/login", async (req, res) => {
     const [student] = await db.select().from(studentsTable).where(eq(studentsTable.email, email.toLowerCase()));
     if (!student) return res.status(401).json({ error: "Invalid email or password" });
     if (!student.isApproved) return res.status(403).json({ error: "Your account is pending approval" });
+    if (student.status === "suspended") return res.status(403).json({ error: "Your account has been suspended. Please contact the administrator." });
+    if (student.status === "closed") return res.status(403).json({ error: "This account has been closed. Please contact the administrator." });
 
     const valid = await bcrypt.compare(password, student.passwordHash);
     if (!valid) return res.status(401).json({ error: "Invalid email or password" });

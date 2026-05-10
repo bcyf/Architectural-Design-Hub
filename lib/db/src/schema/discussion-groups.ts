@@ -5,6 +5,7 @@ export const groupCategoryEnum = pgEnum("group_category", ["project", "assignmen
 export const memberRoleEnum = pgEnum("member_role", ["leader", "co-leader", "designer", "researcher", "reviewer", "member"]);
 export const taskStatusEnum = pgEnum("task_status", ["todo", "in_progress", "review", "done"]);
 export const taskPriorityEnum = pgEnum("task_priority", ["low", "medium", "high"]);
+export const groupStatusEnum = pgEnum("group_status", ["active", "suspended", "closed"]);
 
 export const discussionGroupsTable = pgTable("discussion_groups", {
   id: serial("id").primaryKey(),
@@ -14,6 +15,7 @@ export const discussionGroupsTable = pgTable("discussion_groups", {
   isPrivate: boolean("is_private").notNull().default(false),
   coverColor: text("cover_color").default("#16a34a"),
   coverImage: text("cover_image"),
+  status: groupStatusEnum("status").notNull().default("active"),
   createdBy: integer("created_by").references(() => studentsTable.id).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

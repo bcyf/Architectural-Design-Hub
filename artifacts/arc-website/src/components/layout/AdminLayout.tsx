@@ -1,12 +1,13 @@
 import { Link, useLocation } from "wouter";
 import { 
   LayoutDashboard, Calendar, FileText, Image as ImageIcon, 
-  Users, Folder, Briefcase, Mail, LogOut, Settings, Newspaper, Quote, HelpCircle
+  Users, Folder, Briefcase, Mail, LogOut, Settings, Newspaper, Quote, HelpCircle, ShieldCheck
 } from "lucide-react";
 import { removeToken } from "@/lib/auth";
 
 const sidebarLinks = [
   { href: "/admin", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/admin/accounts", label: "Accounts & Groups", icon: ShieldCheck },
   { href: "/admin/events", label: "Events", icon: Calendar },
   { href: "/admin/blog", label: "Blog & News", icon: FileText },
   { href: "/admin/gallery", label: "Gallery", icon: ImageIcon },
