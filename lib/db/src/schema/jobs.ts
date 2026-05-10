@@ -11,6 +11,7 @@ export const jobsTable = pgTable("jobs", {
   description: text("description").notNull(),
   requirements: text("requirements"),
   applicationUrl: text("application_url"),
+  imageUrl: text("image_url"),
   deadline: text("deadline"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

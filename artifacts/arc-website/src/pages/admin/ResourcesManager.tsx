@@ -16,6 +16,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
+import { FileUploader } from "@/components/admin/FileUploader";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -167,6 +168,8 @@ export default function ResourcesManager() {
                     <Select onValueChange={field.onChange} defaultValue={field.value}>
                       <FormControl><SelectTrigger><SelectValue /></SelectTrigger></FormControl>
                       <SelectContent>
+                        <SelectItem value="book">Book / PDF</SelectItem>
+                        <SelectItem value="video">Video</SelectItem>
                         <SelectItem value="guide">Guide</SelectItem>
                         <SelectItem value="template">Template</SelectItem>
                         <SelectItem value="tutorial">Tutorial</SelectItem>
@@ -182,7 +185,24 @@ export default function ResourcesManager() {
                 )} />
               </div>
               <FormField control={form.control} name="fileUrl" render={({ field }) => (
-                <FormItem><FormLabel>Link / File URL</FormLabel><FormControl><Input {...field} /></FormControl><FormMessage /></FormItem>
+                <FormItem>
+                  <FormLabel>Upload File or Paste URL</FormLabel>
+                  <FormControl>
+                    <FileUploader
+                      value={field.value || ""}
+                      onChange={field.onChange}
+                      accept="any"
+                    />
+                  </FormControl>
+                  <p className="text-[11px] text-muted-foreground">Upload a PDF or video file, or paste a direct URL below.</p>
+                  <Input
+                    placeholder="Or paste a URL (e.g. https://...)"
+                    value={field.value || ""}
+                    onChange={(e) => field.onChange(e.target.value)}
+                    className="mt-1"
+                  />
+                  <FormMessage />
+                </FormItem>
               )} />
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>

@@ -8,6 +8,7 @@ import {
   useCreateJob, useUpdateJob, useDeleteJob,
   Job
 } from "@workspace/api-client-react";
+import { ImageUploader } from "@/components/admin/ImageUploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -28,6 +29,7 @@ const jobSchema = z.object({
   description: z.string().min(1, "Required"),
   requirements: z.string().optional().or(z.literal("")),
   applicationUrl: z.string().optional().or(z.literal("")),
+  imageUrl: z.string().optional().or(z.literal("")),
   deadline: z.string().optional().or(z.literal("")),
 });
 
@@ -48,12 +50,12 @@ export default function JobsManager() {
 
   const form = useForm<FormValues>({
     resolver: zodResolver(jobSchema),
-    defaultValues: { title: "", company: "", location: "", type: "internship", description: "", requirements: "", applicationUrl: "", deadline: "" },
+    defaultValues: { title: "", company: "", location: "", type: "internship", description: "", requirements: "", applicationUrl: "", imageUrl: "", deadline: "" },
   });
 
   const handleOpenCreate = () => {
     setEditingJob(null);
-    form.reset({ title: "", company: "", location: "", type: "internship", description: "", requirements: "", applicationUrl: "", deadline: "" });
+    form.reset({ title: "", company: "", location: "", type: "internship", description: "", requirements: "", applicationUrl: "", imageUrl: "", deadline: "" });
     setIsDialogOpen(true);
   };
 
@@ -61,7 +63,8 @@ export default function JobsManager() {
     setEditingJob(job);
     form.reset({
       title: job.title, company: job.company, location: job.location, type: job.type,
-      description: job.description, requirements: job.requirements || "", applicationUrl: job.applicationUrl || "", deadline: job.deadline || ""
+      description: job.description, requirements: job.requirements || "", applicationUrl: job.applicationUrl || "",
+      imageUrl: (job as any).imageUrl || "", deadline: job.deadline || ""
     });
     setIsDialogOpen(true);
   };
@@ -203,6 +206,16 @@ export default function JobsManager() {
                   <FormItem><FormLabel>Deadline (Optional)</FormLabel><FormControl><Input type="date" {...field} /></FormControl><FormMessage /></FormItem>
                 )} />
               </div>
+
+              <FormField control={form.control} name="imageUrl" render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Company / Job Image (Optional)</FormLabel>
+                  <FormControl>
+                    <ImageUploader value={field.value || ""} onChange={field.onChange} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )} />
 
               <div className="flex justify-end gap-3 pt-4">
                 <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>Cancel</Button>
