@@ -18,6 +18,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import { DeleteConfirmDialog } from "@/components/admin/DeleteConfirmDialog";
 import { FileUploader } from "@/components/admin/FileUploader";
 import { ImageUploader } from "@/components/admin/ImageUploader";
+import { VideoThumbnailPicker } from "@/components/admin/VideoThumbnailPicker";
 import { Plus, Edit, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Badge } from "@/components/ui/badge";
@@ -209,9 +210,17 @@ export default function ResourcesManager() {
               )} />
               <FormField control={form.control} name="imageUrl" render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Resource Image (Optional)</FormLabel>
+                  <FormLabel>{form.watch("type") === "video" ? "Video Thumbnail (Optional)" : "Resource Image (Optional)"}</FormLabel>
                   <FormControl>
-                    <ImageUploader value={field.value || ""} onChange={field.onChange} />
+                    {form.watch("type") === "video" ? (
+                      <VideoThumbnailPicker
+                        videoUrl={form.watch("fileUrl") || ""}
+                        value={field.value || ""}
+                        onChange={field.onChange}
+                      />
+                    ) : (
+                      <ImageUploader value={field.value || ""} onChange={field.onChange} />
+                    )}
                   </FormControl>
                   <FormMessage />
                 </FormItem>
