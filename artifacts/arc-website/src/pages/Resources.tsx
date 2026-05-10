@@ -158,17 +158,27 @@ export default function Resources() {
 
   const countForCategory = (cat: string) => categorisedResources.filter(r => (r as any).category === cat).length;
 
+  // Resolve the best URL for a resource: prefer our stored copy, fall back to original
+  const resolveFileUrl = (resource: any): string | null => {
+    const stored = (resource as any).storedObjectPath;
+    if (stored) return `/api/storage${stored}`;
+    return resource.fileUrl ?? null;
+  };
+
   const handleWatchVideo = (resource: any) => {
-    if (resource.fileUrl && isDirectVideo(resource.fileUrl)) {
-      setActiveVideo({ src: resource.fileUrl, title: resource.title, description: resource.description, type: resource.type });
-    } else if (resource.fileUrl) {
-      window.open(resource.fileUrl, "_blank", "noreferrer");
+    const url = resolveFileUrl(resource);
+    if (url && isDirectVideo(url)) {
+      setActiveVideo({ src: url, title: resource.title, description: resource.description, type: resource.type });
+    } else if (url) {
+      window.open(url, "_blank", "noreferrer");
     }
   };
 
   const renderResourceCard = (resource: any) => {
     const isVideo = resource.type === "video";
-    const hasDirectVideo = isDirectVideo(resource.fileUrl);
+    const resolvedUrl = resolveFileUrl(resource);
+    const hasDirectVideo = !!(resolvedUrl && isDirectVideo(resolvedUrl));
+    const isStoredOnServer = !!(resource as any).storedObjectPath;
     const catMeta = getCategoryMeta((resource as any).category);
 
     return (
@@ -185,9 +195,9 @@ export default function Resources() {
               </div>
             )}
           </div>
-        ) : isVideo && resource.fileUrl && hasDirectVideo ? (
+        ) : isVideo && resolvedUrl && hasDirectVideo ? (
           <div className="relative w-full aspect-video bg-black overflow-hidden cursor-pointer" onClick={() => handleWatchVideo(resource)}>
-            <video src={resource.fileUrl} className="w-full h-full object-cover opacity-70" preload="metadata" muted />
+            <video src={resolvedUrl} className="w-full h-full object-cover opacity-70" preload="metadata" muted />
             <div className="absolute inset-0 flex items-center justify-center">
               <div className="w-14 h-14 rounded-full bg-white/15 border border-white/40 flex items-center justify-center backdrop-blur-sm">
                 <Play className="w-6 h-6 text-white fill-white ml-0.5" />
@@ -201,7 +211,12 @@ export default function Resources() {
             <div className="p-2.5 bg-secondary text-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
               {getResourceIcon(resource.type)}
             </div>
-            <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{resource.type}</span>
+            <div className="flex items-center gap-2">
+              {isStoredOnServer && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-green-100 text-green-700 border border-green-200 uppercase tracking-wide">Hosted</span>
+              )}
+              <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{resource.type}</span>
+            </div>
           </div>
 
           <h3 className="text-lg font-display font-bold mb-2 leading-tight">{resource.title}</h3>
@@ -219,20 +234,20 @@ export default function Resources() {
 
           {(resource as any).tags && (
             <div className="flex flex-wrap gap-1 mb-4">
-              {String((resource as any).tags).split(",").map((t: string) => t.trim()).filter(Boolean).map((tag: string) => (
+              {String((resource as any).tags).split(",").map((t: string) => t.trim()).filter(Boolean).filter((t: string) => t !== "internet-archive" && t !== "open-access").map((tag: string) => (
                 <span key={tag} className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground rounded-full">{tag}</span>
               ))}
             </div>
           )}
 
-          {resource.fileUrl ? (
+          {resolvedUrl ? (
             isVideo && hasDirectVideo ? (
               <Button className="w-full rounded-none mt-auto gap-2" onClick={() => handleWatchVideo(resource)}>
                 <Play className="w-4 h-4 fill-current" /> Watch Video
               </Button>
             ) : (
               <Button variant="outline" className="w-full rounded-none mt-auto gap-2" asChild>
-                <a href={resource.fileUrl} target="_blank" rel="noreferrer" download={resource.type === "book"}>
+                <a href={resolvedUrl} target="_blank" rel="noreferrer" download={!isStoredOnServer && resource.type !== "video" ? undefined : (resource.type !== "video")}>
                   {isVideo ? <><MonitorPlay className="w-4 h-4" />Open Video</> : <><Download className="w-4 h-4" />Download</>}
                 </a>
               </Button>

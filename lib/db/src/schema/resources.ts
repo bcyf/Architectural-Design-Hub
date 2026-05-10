@@ -22,6 +22,7 @@ export const resourcesTable = pgTable("resources", {
   type: text("type").notNull().default("guide"),
   fileUrl: text("file_url"),
   imageUrl: text("image_url"),
+  storedObjectPath: text("stored_object_path"),
   software: text("software"),
   category: text("category"),
   tags: text("tags"),
