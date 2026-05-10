@@ -5,7 +5,7 @@ import { getStudentToken, getStudentPayload } from "@/lib/student-auth";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Plus, Users, Lock, Globe, Hash, Search,
-  BookOpen, Layers, MessageSquare, ArrowRight, X, UserPlus, Check, ChevronDown
+  BookOpen, Layers, MessageSquare, ArrowRight, X, Check, ChevronDown, Camera, ImagePlus
 } from "lucide-react";
 
 const CATEGORY_ICONS: Record<string, any> = {
@@ -50,9 +50,25 @@ async function apiFetch(path: string, opts: RequestInit = {}) {
   return res.json();
 }
 
+async function uploadFile(file: File): Promise<string> {
+  const token = getStudentToken();
+  const urlRes = await fetch("/api/storage/uploads/request-url", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+  });
+  const { uploadURL, objectPath } = await urlRes.json();
+  await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+  return objectPath;
+}
+
+function coverSrc(path: string) {
+  return `/api/storage/objects${path.replace(/^\/objects/, "")}`;
+}
+
 interface Group {
   id: number; name: string; description?: string; category: string;
-  isPrivate: boolean; coverColor: string; memberCount: number; isMember: boolean; createdBy: number;
+  isPrivate: boolean; coverColor: string; coverImage?: string; memberCount: number; isMember: boolean; createdBy: number;
 }
 
 interface StudentResult {
@@ -192,6 +208,10 @@ export default function Groups() {
   const [form, setForm] = useState({ name: "", description: "", category: "general", isPrivate: false, coverColor: "#16a34a" });
   const [invitedMembers, setInvitedMembers] = useState<InvitedMember[]>([]);
   const [formError, setFormError] = useState("");
+  const [coverFile, setCoverFile] = useState<File | null>(null);
+  const [coverPreview, setCoverPreview] = useState<string>("");
+  const [coverUploading, setCoverUploading] = useState(false);
+  const coverInputRef = useRef<HTMLInputElement>(null);
 
   const { data: groups = [], isLoading } = useQuery<Group[]>({
     queryKey: ["groups"],
@@ -200,11 +220,13 @@ export default function Groups() {
 
   const createMut = useMutation({
     mutationFn: (payload: any) => apiFetch("/groups", { method: "POST", body: JSON.stringify(payload) }),
-    onSuccess: (newGroup) => {
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["groups"] });
       setShowCreate(false);
       setForm({ name: "", description: "", category: "general", isPrivate: false, coverColor: "#16a34a" });
       setInvitedMembers([]);
+      setCoverFile(null);
+      setCoverPreview("");
     },
     onError: (e: any) => setFormError(e.message),
   });
@@ -214,18 +236,33 @@ export default function Groups() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ["groups"] }); setShowJoinModal(null); },
   });
 
-  function handleCreate() {
+  async function handleCreate() {
     setFormError("");
-    createMut.mutate({
-      ...form,
-      invitedMembers: invitedMembers.map(m => ({ studentId: m.id, role: m.role })),
-    });
+    setCoverUploading(true);
+    try {
+      let coverImage: string | undefined;
+      if (coverFile) coverImage = await uploadFile(coverFile);
+      createMut.mutate({ ...form, coverImage, invitedMembers: invitedMembers.map(m => ({ studentId: m.id, role: m.role })) });
+    } catch {
+      setFormError("Failed to upload cover image. Please try again.");
+      setCoverUploading(false);
+    }
   }
 
   function closeCreate() {
     setShowCreate(false);
     setFormError("");
     setInvitedMembers([]);
+    setCoverFile(null);
+    setCoverPreview("");
+  }
+
+  function handleCoverSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setCoverFile(file);
+    setCoverPreview(URL.createObjectURL(file));
+    e.target.value = "";
   }
 
   const filtered = groups.filter(g => {
@@ -334,9 +371,30 @@ export default function Groups() {
                 </select>
               </div>
 
+              {/* Cover photo */}
               <div>
-                <label className="block text-sm font-medium mb-2">Cover Color</label>
-                <div className="flex gap-2 flex-wrap">
+                <label className="block text-sm font-medium mb-2">Cover Photo</label>
+                <div className="relative w-full h-28 border-2 border-dashed border-border overflow-hidden" style={{ background: form.coverColor }}>
+                  {coverPreview ? (
+                    <img src={coverPreview} alt="cover preview" className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-1 text-white/80">
+                      <ImagePlus className="w-6 h-6" />
+                      <span className="text-xs font-medium">Click to add a cover photo</span>
+                    </div>
+                  )}
+                  <button type="button" onClick={() => coverInputRef.current?.click()}
+                    className="absolute inset-0 w-full h-full cursor-pointer" />
+                  {coverPreview && (
+                    <button type="button" onClick={() => { setCoverFile(null); setCoverPreview(""); }}
+                      className="absolute top-2 right-2 w-6 h-6 bg-black/60 text-white rounded-full flex items-center justify-center hover:bg-black/80 transition-colors z-10">
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  <input ref={coverInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverSelect} />
+                </div>
+                <p className="text-xs text-muted-foreground mt-1.5">Or choose an accent color used when no photo is set:</p>
+                <div className="flex gap-2 flex-wrap mt-2">
                   {COVER_COLORS.map(c => (
                     <button key={c} type="button" onClick={() => setForm(p => ({ ...p, coverColor: c }))}
                       style={{ background: c }}
@@ -365,9 +423,9 @@ export default function Groups() {
             <div className="flex gap-3 p-6 pt-0 sticky bottom-0 bg-background border-t border-border">
               <button onClick={closeCreate}
                 className="flex-1 border border-border py-2.5 text-sm font-medium hover:bg-muted/50 transition-colors">Cancel</button>
-              <button onClick={handleCreate} disabled={createMut.isPending || !form.name.trim()}
+              <button onClick={handleCreate} disabled={createMut.isPending || coverUploading || !form.name.trim()}
                 className="flex-1 bg-primary text-primary-foreground py-2.5 text-sm font-semibold hover:bg-primary/90 disabled:opacity-60 transition-colors flex items-center justify-center gap-2">
-                {createMut.isPending ? "Creating…" : (
+                {(createMut.isPending || coverUploading) ? "Creating…" : (
                   <>Create Group {invitedMembers.length > 0 && <span className="bg-white/20 text-xs px-1.5 py-0.5">+{invitedMembers.length}</span>}</>
                 )}
               </button>
@@ -412,15 +470,27 @@ export default function Groups() {
 function GroupCard({ group, mine, onJoin }: { group: Group; mine?: boolean; onJoin?: () => void }) {
   const Icon = CATEGORY_ICONS[group.category] || Globe;
   return (
-    <div className="border border-border bg-card hover:border-primary/50 transition-colors flex flex-col">
-      <div className="h-2" style={{ background: group.coverColor }} />
-      <div className="p-5 flex flex-col flex-1">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <div className="flex items-center gap-2">
-            <Icon className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-            <span className="text-xs text-muted-foreground capitalize">{CATEGORY_LABELS[group.category]}</span>
-          </div>
-          {group.isPrivate ? <Lock className="w-3.5 h-3.5 text-muted-foreground" /> : <Globe className="w-3.5 h-3.5 text-muted-foreground" />}
+    <div className="border border-border bg-card hover:border-primary/50 transition-colors flex flex-col overflow-hidden">
+      {/* Cover */}
+      <div className="relative h-24 flex-shrink-0 overflow-hidden" style={{ background: group.coverColor }}>
+        {group.coverImage && (
+          <img src={coverSrc(group.coverImage)} alt={group.name}
+            className="w-full h-full object-cover"
+            onError={e => { (e.target as HTMLImageElement).style.display = "none"; }} />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent" />
+        <div className="absolute top-2.5 right-2.5">
+          {group.isPrivate
+            ? <span className="flex items-center gap-1 text-[10px] font-semibold text-white bg-black/40 px-1.5 py-0.5 rounded-full"><Lock className="w-2.5 h-2.5" /> Private</span>
+            : <span className="flex items-center gap-1 text-[10px] font-semibold text-white bg-black/30 px-1.5 py-0.5 rounded-full"><Globe className="w-2.5 h-2.5" /> Public</span>
+          }
+        </div>
+      </div>
+
+      <div className="p-4 flex flex-col flex-1">
+        <div className="flex items-center gap-1.5 mb-1.5">
+          <Icon className="w-3.5 h-3.5 text-muted-foreground flex-shrink-0" />
+          <span className="text-xs text-muted-foreground capitalize">{CATEGORY_LABELS[group.category]}</span>
         </div>
         <h3 className="font-semibold text-base mb-1 line-clamp-1">{group.name}</h3>
         {group.description && <p className="text-sm text-muted-foreground line-clamp-2 mb-3 flex-1">{group.description}</p>}

@@ -43,14 +43,44 @@ router.get("/groups", requireStudentAuth, async (req: Request, res: Response) =>
   }
 });
 
+router.patch("/groups/:id", requireStudentAuth, async (req: Request, res: Response) => {
+  const me = (req as any).student;
+  const groupId = Number(req.params.id);
+  const { name, description, coverColor, coverImage } = req.body;
+
+  try {
+    const membership = await isMember(groupId, me.id);
+    if (!membership) return res.status(403).json({ error: "Members only" });
+    if (!["leader", "co-leader"].includes(membership.role)) {
+      return res.status(403).json({ error: "Only leaders can update group details" });
+    }
+
+    const updates: Record<string, any> = { updatedAt: new Date() };
+    if (name !== undefined) updates.name = name.trim();
+    if (description !== undefined) updates.description = description?.trim() || null;
+    if (coverColor !== undefined) updates.coverColor = coverColor;
+    if (coverImage !== undefined) updates.coverImage = coverImage || null;
+
+    const [updated] = await db.update(discussionGroupsTable)
+      .set(updates)
+      .where(eq(discussionGroupsTable.id, groupId))
+      .returning();
+
+    res.json(updated);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to update group" });
+  }
+});
+
 router.post("/groups", requireStudentAuth, async (req: Request, res: Response) => {
   const me = (req as any).student;
-  const { name, description, category, isPrivate, coverColor } = req.body;
+  const { name, description, category, isPrivate, coverColor, coverImage } = req.body;
   if (!name?.trim()) return res.status(400).json({ error: "Group name is required" });
 
   try {
     const [group] = await db.insert(discussionGroupsTable)
-      .values({ name: name.trim(), description: description?.trim(), category: category || "general", isPrivate: !!isPrivate, coverColor: coverColor || "#16a34a", createdBy: me.id })
+      .values({ name: name.trim(), description: description?.trim(), category: category || "general", isPrivate: !!isPrivate, coverColor: coverColor || "#16a34a", coverImage: coverImage || null, createdBy: me.id })
       .returning();
 
     await db.insert(groupMembersTable).values({ groupId: group.id, studentId: me.id, role: "leader" });

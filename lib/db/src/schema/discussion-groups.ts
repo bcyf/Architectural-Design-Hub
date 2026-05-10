@@ -13,6 +13,7 @@ export const discussionGroupsTable = pgTable("discussion_groups", {
   category: groupCategoryEnum("category").notNull().default("general"),
   isPrivate: boolean("is_private").notNull().default(false),
   coverColor: text("cover_color").default("#16a34a"),
+  coverImage: text("cover_image"),
   createdBy: integer("created_by").references(() => studentsTable.id).notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),

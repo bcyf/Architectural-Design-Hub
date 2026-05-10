@@ -9,7 +9,7 @@ import {
   CheckCircle2, Circle, Clock, AlertCircle, Flag, Calendar, Trash2,
   ArrowLeft, Lock, Globe, Pencil, LogOut, UserCheck, UserPlus, Search, Check,
   Upload, FileText, FileCheck, Download, ThumbsUp, Paperclip, Eye,
-  ImagePlus, FileUp, ZoomIn, Mic, StopCircle, CornerUpLeft, Smile
+  ImagePlus, FileUp, ZoomIn, Mic, StopCircle, CornerUpLeft, Smile, Camera
 } from "lucide-react";
 
 const QUICK_EMOJIS = ["👍", "❤️", "😂", "😮", "😢", "🙏", "🔥", "✅"];
@@ -130,6 +130,8 @@ export default function GroupRoom() {
 
   const chatEndRef = useRef<HTMLDivElement>(null);
   const inviteDebounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const coverImgInputRef = useRef<HTMLInputElement>(null);
+  const [coverUploading, setCoverUploading] = useState(false);
 
   const { data: group, isLoading: groupLoading, error: groupError } = useQuery({
     queryKey: ["group", groupId],
@@ -317,6 +319,34 @@ export default function GroupRoom() {
     onError: (e: any) => setInviteError(e.message),
   });
 
+  const updateCover = useMutation({
+    mutationFn: (coverImage: string | null) =>
+      apiFetch(`/groups/${groupId}`, { method: "PATCH", body: JSON.stringify({ coverImage }) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["group", groupId] }),
+  });
+
+  async function handleCoverChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    e.target.value = "";
+    setCoverUploading(true);
+    try {
+      const token = getStudentToken();
+      const urlRes = await fetch("/api/storage/uploads/request-url", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ name: file.name, size: file.size, contentType: file.type }),
+      });
+      const { uploadURL, objectPath } = await urlRes.json();
+      await fetch(uploadURL, { method: "PUT", body: file, headers: { "Content-Type": file.type } });
+      updateCover.mutate(objectPath);
+    } catch {
+      alert("Failed to upload cover image. Please try again.");
+    } finally {
+      setCoverUploading(false);
+    }
+  }
+
   const approveSubmission = useMutation({
     mutationFn: ({ taskId, subId }: { taskId: number; subId: number }) =>
       apiFetch(`/groups/${groupId}/tasks/${taskId}/submissions/${subId}/approve`, { method: "PATCH" }),
@@ -392,17 +422,40 @@ export default function GroupRoom() {
           <button onClick={() => setLocation("/groups")} className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors mb-4">
             <ArrowLeft className="w-4 h-4" /> Back to Groups
           </button>
-          <div className="flex items-start justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="w-3 h-10 rounded-full flex-shrink-0" style={{ background: group.coverColor }} />
-              <div>
-                <div className="flex items-center gap-2">
-                  <h1 className="text-2xl font-display font-bold">{group.name}</h1>
-                  {group.isPrivate ? <Lock className="w-4 h-4 text-muted-foreground" /> : <Globe className="w-4 h-4 text-muted-foreground" />}
-                </div>
-                {group.description && <p className="text-muted-foreground text-sm mt-0.5">{group.description}</p>}
+
+          {/* Cover banner */}
+          <div className="relative w-full h-36 mb-4 overflow-hidden rounded-sm group/cover" style={{ background: group.coverColor }}>
+            {group.coverImage && (
+              <img
+                src={`/api/storage/objects${group.coverImage.replace(/^\/objects/, "")}`}
+                alt={group.name}
+                className="w-full h-full object-cover"
+                onError={e => { (e.target as HTMLImageElement).style.display = "none"; }}
+              />
+            )}
+            <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+            <div className="absolute bottom-3 left-4">
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-display font-bold text-white drop-shadow">{group.name}</h1>
+                {group.isPrivate ? <Lock className="w-4 h-4 text-white/80" /> : <Globe className="w-4 h-4 text-white/80" />}
               </div>
+              {group.description && <p className="text-white/75 text-sm mt-0.5 drop-shadow-sm">{group.description}</p>}
             </div>
+            {isLeader && (
+              <button
+                onClick={() => coverImgInputRef.current?.click()}
+                disabled={coverUploading}
+                title="Change cover photo"
+                className="absolute top-2.5 right-2.5 flex items-center gap-1.5 text-xs text-white bg-black/40 hover:bg-black/60 px-2.5 py-1.5 rounded-full transition-colors opacity-0 group-hover/cover:opacity-100 backdrop-blur-sm">
+                <Camera className="w-3.5 h-3.5" />
+                {coverUploading ? "Uploading…" : "Change Photo"}
+              </button>
+            )}
+            <input ref={coverImgInputRef} type="file" accept="image/*" className="hidden" onChange={handleCoverChange} />
+          </div>
+
+          <div className="flex items-start justify-between gap-4">
+            <div />
             {group.isMember && (
               <div className="flex items-center gap-2 flex-shrink-0">
                 {myMember && (
