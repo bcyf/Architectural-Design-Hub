@@ -14,11 +14,13 @@ import newsletterRouter from "./newsletter";
 import quotesRouter from "./quotes";
 import faqsRouter from "./faqs";
 import studentsRouter from "./students";
+import groupsRouter from "./groups";
 
 const router: IRouter = Router();
 
 router.use(authRouter);
 router.use(studentsRouter);
+router.use(groupsRouter);
 router.use(healthRouter);
 router.use(storageRouter);
 router.use(eventsRouter);

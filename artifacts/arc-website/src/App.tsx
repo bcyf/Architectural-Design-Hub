@@ -17,6 +17,8 @@ import NotFound from "@/pages/not-found";
 import StudentLogin from "@/pages/StudentLogin";
 import StudentSignup from "@/pages/StudentSignup";
 import StudentProtectedRoute from "@/components/StudentProtectedRoute";
+import Groups from "@/pages/Groups";
+import GroupRoom from "@/pages/GroupRoom";
 
 // Admin Pages
 import AdminLogin from "@/pages/admin/Login";
@@ -102,6 +104,8 @@ function Router() {
       {/* Student-protected Routes */}
       <Route path="/resources" component={() => <StudentPage><Resources /></StudentPage>} />
       <Route path="/gallery" component={() => <StudentPage><Gallery /></StudentPage>} />
+      <Route path="/groups" component={() => <StudentPage><Groups /></StudentPage>} />
+      <Route path="/groups/:id" component={() => <StudentPage><GroupRoom /></StudentPage>} />
 
       <Route component={NotFound} />
     </Switch>

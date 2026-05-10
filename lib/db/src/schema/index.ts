@@ -11,3 +11,4 @@ export * from "./newsletter-campaigns";
 export * from "./quotes";
 export * from "./faqs";
 export * from "./students";
+export * from "./discussion-groups";
