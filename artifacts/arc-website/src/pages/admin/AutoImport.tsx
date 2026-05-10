@@ -3,7 +3,7 @@ import { getToken } from "@/lib/auth";
 import {
   RefreshCw, BookOpen, Video, FileText, Globe, Download,
   CheckCircle2, AlertCircle, Sparkles, Info, ChevronDown, ChevronUp,
-  HardDrive, CloudDownload, Loader2, X, Youtube, Eye, TrendingUp, KeyRound
+  HardDrive, CloudDownload, Loader2, X, Youtube, Eye, TrendingUp
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -552,15 +552,6 @@ export default function AutoImport() {
             </div>
           </div>
 
-          {/* API key setup instruction */}
-          <div className="flex items-start gap-3 p-4 rounded-lg border border-amber-200 bg-amber-50">
-            <KeyRound className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-            <div className="text-sm text-amber-800">
-              <span className="font-semibold">Requires a YouTube API key. </span>
-              <a href="https://console.developers.google.com/apis/api/youtube.googleapis.com" target="_blank" rel="noreferrer" className="underline font-medium">Enable the YouTube Data API v3</a> in Google Cloud Console (free — 10,000 searches/day), then add the key as <code className="bg-amber-100 px-1 rounded font-mono">YOUTUBE_API_KEY</code> in your Secrets tab. The key takes effect immediately without a restart.
-            </div>
-          </div>
-
           <div className="flex gap-2">
             <Button variant="outline" onClick={handleYtPreview} disabled={ytPreviewing || ytImporting} className="gap-2">
               {ytPreviewing ? <Loader2 className="w-4 h-4 animate-spin" /> : <Youtube className="w-4 h-4" />}
@@ -576,7 +567,7 @@ export default function AutoImport() {
 
           {ytError && (
             <div className={`flex items-start gap-3 p-4 rounded-lg border ${isApiKeyError ? "border-amber-200 bg-amber-50 text-amber-800" : "border-red-200 bg-red-50 text-red-700"}`}>
-              {isApiKeyError ? <KeyRound className="w-5 h-5 flex-shrink-0 mt-0.5" /> : <AlertCircle className="w-5 h-5 flex-shrink-0" />}
+              <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="text-sm font-semibold">{isApiKeyError ? "API Key Not Configured" : "Error"}</p>
                 <p className="text-sm mt-0.5">{ytError}</p>
