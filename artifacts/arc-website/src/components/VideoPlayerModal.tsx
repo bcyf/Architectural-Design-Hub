@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { X } from "lucide-react";
+import { X, ExternalLink } from "lucide-react";
 
 interface VideoPlayerModalProps {
   open: boolean;
@@ -8,22 +8,19 @@ interface VideoPlayerModalProps {
   title: string;
   description?: string;
   type?: string;
+  youtubeId?: string;
 }
 
-export function VideoPlayerModal({ open, onClose, src, title, description, type }: VideoPlayerModalProps) {
+export function VideoPlayerModal({ open, onClose, src, title, description, type, youtubeId }: VideoPlayerModalProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
 
   useEffect(() => {
-    if (!open) {
-      videoRef.current?.pause();
-    }
+    if (!open) videoRef.current?.pause();
   }, [open]);
 
   useEffect(() => {
     if (!open) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
   }, [open, onClose]);
@@ -42,12 +39,24 @@ export function VideoPlayerModal({ open, onClose, src, title, description, type 
         {/* Header */}
         <div className="flex items-start justify-between px-5 py-4 bg-zinc-900 border-b border-white/10">
           <div className="flex-1 min-w-0 pr-4">
-            <p className="text-xs font-semibold uppercase tracking-widest text-primary mb-0.5">
-              {type || "Video"}
-            </p>
-            <h2 className="text-white font-display font-bold text-lg leading-tight truncate">
-              {title}
-            </h2>
+            <div className="flex items-center gap-2 mb-0.5">
+              <p className="text-xs font-semibold uppercase tracking-widest text-primary">
+                {youtubeId ? "YouTube" : (type || "Video")}
+              </p>
+              {youtubeId && (
+                <a
+                  href={`https://www.youtube.com/watch?v=${youtubeId}`}
+                  target="_blank"
+                  rel="noreferrer"
+                  onClick={e => e.stopPropagation()}
+                  className="text-white/40 hover:text-white/80 transition-colors"
+                  title="Open on YouTube"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              )}
+            </div>
+            <h2 className="text-white font-display font-bold text-lg leading-tight truncate">{title}</h2>
             {description && (
               <p className="text-white/50 text-xs mt-1 line-clamp-1">{description}</p>
             )}
@@ -61,17 +70,29 @@ export function VideoPlayerModal({ open, onClose, src, title, description, type 
           </button>
         </div>
 
-        {/* Video player */}
+        {/* Player */}
         <div className="bg-black">
-          <video
-            ref={videoRef}
-            src={src}
-            controls
-            autoPlay
-            className="w-full max-h-[70vh] outline-none"
-            controlsList="nodownload"
-            preload="auto"
-          />
+          {youtubeId ? (
+            <div className="relative w-full" style={{ paddingBottom: "56.25%" }}>
+              <iframe
+                src={`https://www.youtube.com/embed/${youtubeId}?autoplay=1&rel=0&modestbranding=1`}
+                className="absolute inset-0 w-full h-full"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                title={title}
+              />
+            </div>
+          ) : (
+            <video
+              ref={videoRef}
+              src={src}
+              controls
+              autoPlay
+              className="w-full max-h-[70vh] outline-none"
+              controlsList="nodownload"
+              preload="auto"
+            />
+          )}
         </div>
       </div>
     </div>

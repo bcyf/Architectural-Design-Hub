@@ -43,6 +43,13 @@ function isDirectVideo(url: string) {
   return url && url.match(/\.(mp4|webm|mov|avi|mkv)/i);
 }
 
+function getYouTubeId(resource: any): string | null {
+  if (resource.youtubeId) return resource.youtubeId;
+  const url: string = resource.fileUrl ?? "";
+  const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([^&?/]+)/);
+  return match?.[1] ?? null;
+}
+
 function ShareBar({ title, description }: { title: string; description?: string }) {
   const [copied, setCopied] = useState(false);
   const pageUrl = typeof window !== "undefined" ? `${window.location.origin}/resources` : "/resources";
@@ -97,7 +104,7 @@ function ShareBar({ title, description }: { title: string; description?: string 
   );
 }
 
-interface ActiveVideo { src: string; title: string; description?: string; type?: string; }
+interface ActiveVideo { src: string; title: string; description?: string; type?: string; youtubeId?: string; }
 
 export default function Resources() {
   const { data: resources, isLoading: resourcesLoading } = useListResources();
@@ -166,6 +173,11 @@ export default function Resources() {
   };
 
   const handleWatchVideo = (resource: any) => {
+    const ytId = getYouTubeId(resource);
+    if (ytId) {
+      setActiveVideo({ src: "", title: resource.title, description: resource.description, type: resource.type, youtubeId: ytId });
+      return;
+    }
     const url = resolveFileUrl(resource);
     if (url && isDirectVideo(url)) {
       setActiveVideo({ src: url, title: resource.title, description: resource.description, type: resource.type });
@@ -180,6 +192,7 @@ export default function Resources() {
     const hasDirectVideo = !!(resolvedUrl && isDirectVideo(resolvedUrl));
     const isStoredOnServer = !!(resource as any).storedObjectPath;
     const catMeta = getCategoryMeta((resource as any).category);
+    const ytId = getYouTubeId(resource);
 
     return (
       <div key={resource.id} className="border border-border hover:border-primary transition-colors bg-card flex flex-col h-full group">
@@ -212,7 +225,10 @@ export default function Resources() {
               {getResourceIcon(resource.type)}
             </div>
             <div className="flex items-center gap-2">
-              {isStoredOnServer && (
+              {ytId && (
+                <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-red-100 text-red-700 border border-red-200 uppercase tracking-wide">YouTube</span>
+              )}
+              {isStoredOnServer && !ytId && (
                 <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded bg-green-100 text-green-700 border border-green-200 uppercase tracking-wide">Hosted</span>
               )}
               <span className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{resource.type}</span>
@@ -240,7 +256,11 @@ export default function Resources() {
             </div>
           )}
 
-          {resolvedUrl ? (
+          {ytId ? (
+            <Button className="w-full rounded-none mt-auto gap-2 bg-red-600 hover:bg-red-700 text-white" onClick={() => handleWatchVideo(resource)}>
+              <Play className="w-4 h-4 fill-current" /> Watch Video
+            </Button>
+          ) : resolvedUrl ? (
             isVideo && hasDirectVideo ? (
               <Button className="w-full rounded-none mt-auto gap-2" onClick={() => handleWatchVideo(resource)}>
                 <Play className="w-4 h-4 fill-current" /> Watch Video
@@ -295,7 +315,8 @@ export default function Resources() {
     <PageWrapper>
       <VideoPlayerModal open={!!activeVideo} onClose={() => setActiveVideo(null)}
         src={activeVideo?.src || ""} title={activeVideo?.title || ""}
-        description={activeVideo?.description} type={activeVideo?.type} />
+        description={activeVideo?.description} type={activeVideo?.type}
+        youtubeId={activeVideo?.youtubeId} />
 
       <div className="bg-foreground text-background py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

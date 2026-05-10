@@ -23,6 +23,7 @@ export const resourcesTable = pgTable("resources", {
   fileUrl: text("file_url"),
   imageUrl: text("image_url"),
   storedObjectPath: text("stored_object_path"),
+  youtubeId: text("youtube_id"),
   software: text("software"),
   category: text("category"),
   tags: text("tags"),

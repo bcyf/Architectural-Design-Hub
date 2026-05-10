@@ -322,4 +322,28 @@ router.post("/admin/resources/:id/download-to-storage", requireAuth, async (req,
 });
 
 
+// ── YouTube Import ────────────────────────────────────────────────────────────
+
+router.get("/admin/youtube-import/preview", requireAuth, async (_req, res) => {
+  try {
+    const { previewYouTubeImport } = await import("../lib/youtube-import");
+    const items = await previewYouTubeImport();
+    res.json(items);
+  } catch (err: any) {
+    console.error("[youtube-import preview]", err);
+    res.status(500).json({ error: err?.message ?? "Failed to fetch YouTube preview" });
+  }
+});
+
+router.post("/admin/youtube-import", requireAuth, async (_req, res) => {
+  try {
+    const { runYouTubeImport } = await import("../lib/youtube-import");
+    const result = await runYouTubeImport();
+    res.json(result);
+  } catch (err: any) {
+    console.error("[youtube-import run]", err);
+    res.status(500).json({ error: err?.message ?? "YouTube import failed" });
+  }
+});
+
 export default router;
