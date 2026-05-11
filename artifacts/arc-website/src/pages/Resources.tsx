@@ -8,7 +8,8 @@ import {
   MonitorPlay, BookOpen, Video, File, Play,
   Link2, Mail, Check, Search, X as XIcon,
   FlaskConical, Ruler, Layers, Cpu, Building2,
-  Leaf, Presentation, HardHat, Library, ChevronRight
+  Leaf, Presentation, HardHat, Library, ChevronRight,
+  AppWindow, Globe, BadgeCheck, GraduationCap, Timer
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
@@ -115,13 +116,15 @@ export default function Resources() {
   const [jobFilter, setJobFilter] = useState("all");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [categoryTypeFilter, setCategoryTypeFilter] = useState("all");
+  const [softwareCategoryFilter, setSoftwareCategoryFilter] = useState("all");
 
   const q = search.toLowerCase().trim();
 
-  const resourceTypes = ["all", ...Array.from(new Set(resources?.map(r => r.type) ?? []))];
+  const resourceTypes = ["all", ...Array.from(new Set(resources?.filter(r => r.type !== "software").map(r => r.type) ?? []))];
   const jobTypes     = ["all", ...Array.from(new Set(jobs?.map(j => j.type) ?? []))];
 
   const filteredResources = resources?.filter(r =>
+    r.type !== "software" &&
     (resourceFilter === "all" || r.type === resourceFilter) &&
     (!q ||
       r.title.toLowerCase().includes(q) ||
@@ -129,6 +132,17 @@ export default function Resources() {
       r.type.toLowerCase().includes(q) ||
       (r.software || "").toLowerCase().includes(q) ||
       ((r as any).category || "").toLowerCase().includes(q) ||
+      ((r as any).tags || "").toLowerCase().includes(q))
+  );
+
+  const softwareResources = resources?.filter(r => r.type === "software") ?? [];
+  const softwareCategories = ["all", ...Array.from(new Set(softwareResources.map(r => (r as any).category).filter(Boolean)))];
+  const filteredSoftware = softwareResources.filter(r =>
+    (softwareCategoryFilter === "all" || (r as any).category === softwareCategoryFilter) &&
+    (!q ||
+      r.title.toLowerCase().includes(q) ||
+      r.description.toLowerCase().includes(q) ||
+      (r.software || "").toLowerCase().includes(q) ||
       ((r as any).tags || "").toLowerCase().includes(q))
   );
 
@@ -284,6 +298,86 @@ export default function Resources() {
     );
   };
 
+  function getSoftwareLicenseBadge(tags: string) {
+    const t = tags.toLowerCase();
+    if (t.includes("student-free")) return { label: "Free for Students", icon: GraduationCap, color: "bg-blue-100 text-blue-700 border-blue-200" };
+    if (t.includes("student-discount")) return { label: "Student Discount", icon: GraduationCap, color: "bg-violet-100 text-violet-700 border-violet-200" };
+    if (t.includes("trial")) return { label: "Free Trial", icon: Timer, color: "bg-amber-100 text-amber-700 border-amber-200" };
+    if (t.includes("free")) return { label: "Completely Free", icon: BadgeCheck, color: "bg-green-100 text-green-700 border-green-200" };
+    return null;
+  }
+
+  function getSoftwarePlatforms(tags: string) {
+    const platforms: string[] = [];
+    if (tags.toLowerCase().includes("web-based") || tags.toLowerCase().includes("web")) platforms.push("Web");
+    if (tags.toLowerCase().includes("windows")) platforms.push("Windows");
+    if (tags.toLowerCase().includes("mac")) platforms.push("Mac");
+    if (tags.toLowerCase().includes("linux")) platforms.push("Linux");
+    return platforms;
+  }
+
+  const renderSoftwareCard = (resource: any) => {
+    const tags = String((resource as any).tags ?? "");
+    const license = getSoftwareLicenseBadge(tags);
+    const platforms = getSoftwarePlatforms(tags);
+    const catMeta = getCategoryMeta((resource as any).category);
+    const url = resource.fileUrl;
+
+    return (
+      <div key={resource.id} className="border border-border hover:border-primary transition-colors bg-card flex flex-col h-full group">
+        <div className="p-6 flex flex-col flex-1">
+          <div className="flex justify-between items-start mb-4">
+            <div className="p-2.5 bg-secondary text-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
+              <AppWindow size={22} />
+            </div>
+            {license && (
+              <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border uppercase tracking-wide ${license.color}`}>
+                <license.icon className="w-3 h-3" />{license.label}
+              </span>
+            )}
+          </div>
+
+          <h3 className="text-lg font-display font-bold mb-1 leading-tight">{resource.title}</h3>
+          {resource.software && resource.software !== resource.title && (
+            <p className="text-xs text-muted-foreground font-medium mb-2">{resource.software}</p>
+          )}
+          <p className="text-sm text-muted-foreground mb-4 flex-grow">{resource.description}</p>
+
+          {catMeta && (
+            <span className={`inline-flex items-center gap-1 text-[11px] font-medium px-2 py-0.5 rounded border mb-3 w-fit ${catMeta.color}`}>
+              <catMeta.icon className="w-3 h-3" />{catMeta.label}
+            </span>
+          )}
+
+          {platforms.length > 0 && (
+            <div className="flex flex-wrap gap-1 mb-4">
+              {platforms.map(p => (
+                <span key={p} className="text-[11px] px-2 py-0.5 bg-muted text-muted-foreground rounded-full flex items-center gap-1">
+                  {p === "Web" ? <Globe className="w-3 h-3" /> : null}{p}
+                </span>
+              ))}
+            </div>
+          )}
+
+          {url ? (
+            <Button className="w-full rounded-none mt-auto gap-2" asChild>
+              <a href={url} target="_blank" rel="noreferrer">
+                <ExternalLink className="w-4 h-4" />
+                {license?.label === "Free Trial" ? "Get Free Trial" : license?.label?.includes("Discount") ? "Get Student Discount" : "Get Free"}
+              </a>
+            </Button>
+          ) : (
+            <Button variant="outline" className="w-full rounded-none mt-auto gap-2" disabled>
+              <AppWindow className="w-4 h-4" /> Visit Official Site
+            </Button>
+          )}
+
+          <ShareBar title={resource.title} description={resource.description} />
+        </div>
+      </div>
+    );
+  };
+
   const renderJobCard = (job: any) => (
     <div key={job.id} className="border border-border hover:border-primary transition-colors bg-card flex flex-col h-full">
       {job.imageUrl && (
@@ -352,6 +446,10 @@ export default function Resources() {
             <TabsTrigger value="research"
               className="rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary py-4 px-6 text-base">
               <Library className="w-4 h-4 mr-2" /> Research Library
+            </TabsTrigger>
+            <TabsTrigger value="software"
+              className="rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary py-4 px-6 text-base">
+              <AppWindow className="w-4 h-4 mr-2" /> Software Tools
             </TabsTrigger>
             <TabsTrigger value="jobs"
               className="rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary py-4 px-6 text-base">
@@ -491,6 +589,59 @@ export default function Resources() {
                 </div>
               </>
             )}
+          </TabsContent>
+
+          {/* ── SOFTWARE TOOLS ── */}
+          <TabsContent value="software" className="mt-0">
+            <div className="mb-8">
+              <h2 className="text-2xl font-display font-bold mb-2">Free Architecture Software</h2>
+              <p className="text-muted-foreground text-sm max-w-2xl">
+                Curated free and student-licensed tools for design, modelling, rendering, and presentation. Click any card to go to the official download page.
+              </p>
+            </div>
+
+            {/* License legend */}
+            <div className="flex flex-wrap gap-3 mb-8 p-4 rounded-lg border border-border bg-card">
+              {[
+                { icon: BadgeCheck, color: "bg-green-100 text-green-700 border-green-200", label: "Completely Free" },
+                { icon: GraduationCap, color: "bg-blue-100 text-blue-700 border-blue-200", label: "Free for Students" },
+                { icon: GraduationCap, color: "bg-violet-100 text-violet-700 border-violet-200", label: "Student Discount" },
+                { icon: Timer, color: "bg-amber-100 text-amber-700 border-amber-200", label: "Free Trial" },
+              ].map(({ icon: Icon, color, label }) => (
+                <span key={label} className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded border ${color}`}>
+                  <Icon className="w-3.5 h-3.5" />{label}
+                </span>
+              ))}
+            </div>
+
+            {/* Category filter */}
+            <div className="flex flex-wrap gap-2 mb-8">
+              {softwareCategories.map(cat => {
+                const meta = cat !== "all" ? getCategoryMeta(cat) : null;
+                return (
+                  <button key={cat} onClick={() => setSoftwareCategoryFilter(cat)}
+                    className={`px-4 py-1.5 text-xs font-medium uppercase tracking-wider border transition-colors ${
+                      softwareCategoryFilter === cat
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-transparent text-muted-foreground border-border hover:border-foreground hover:text-foreground"
+                    }`}>
+                    {cat === "all" ? "All Tools" : (meta?.label ?? cat)}
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+              {resourcesLoading ? (
+                [1,2,3,4,5,6,7,8].map(i => <div key={i} className="h-64 bg-muted animate-pulse" />)
+              ) : filteredSoftware.length > 0 ? (
+                filteredSoftware.map(renderSoftwareCard)
+              ) : (
+                <div className="col-span-full py-12 text-center text-muted-foreground border border-dashed border-border">
+                  {q ? `No software matches "${search}".` : "No software tools available right now."}
+                </div>
+              )}
+            </div>
           </TabsContent>
 
           {/* ── JOB BOARD ── */}
