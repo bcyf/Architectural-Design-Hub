@@ -37,13 +37,15 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   const token = authHeader.slice(7);
   try {
     jwt.verify(token, JWT_SECRET);
-    next();
+    return next();
   } catch {
     return res.status(401).json({ error: "Invalid or expired token" });
   }
 }
 
-router.post("/auth/login", async (req, res) => {
+if (error) {
+  return res.status(400).json(...)
+}
   const { username, password } = req.body;
   if (username !== ADMIN_USERNAME) {
     return res.status(401).json({ error: "Invalid username or password" });
@@ -53,14 +55,14 @@ router.post("/auth/login", async (req, res) => {
     return res.status(401).json({ error: "Invalid username or password" });
   }
   const token = jwt.sign({ username, role: "admin" }, JWT_SECRET, { expiresIn: "8h" });
-  res.json({ token, username });
+  return res.json({ token, username });
 });
 
 router.get("/auth/me", requireAuth, (req, res) => {
   const token = req.headers.authorization!.slice(7);
   const payload = jwt.decode(token) as { username: string };
-  res.json({ username: payload.username, role: "admin" });
-});
+  return res.json({ username: payload.username, role: "admin" });
+ });
 
 router.post("/auth/change-password", requireAuth, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
