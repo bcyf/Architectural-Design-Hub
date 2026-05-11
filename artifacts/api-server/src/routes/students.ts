@@ -1,8 +1,9 @@
 import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { db, studentsTable } from "@workspace/db";
-import { eq } from "drizzle-orm";
+import { eq, and, gt } from "drizzle-orm";
 
 const router: IRouter = Router();
 const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-change-me";
@@ -158,6 +159,61 @@ router.get("/students/search", requireStudentAuth, async (req, res) => {
     res.json(results);
   } catch (err) {
     res.status(500).json({ error: "Search failed" });
+  }
+});
+
+// POST /students/forgot-password
+router.post("/students/forgot-password", async (req, res) => {
+  const { email } = req.body;
+  if (!email) return res.status(400).json({ error: "Email is required" });
+
+  try {
+    const [student] = await db.select().from(studentsTable).where(eq(studentsTable.email, email.toLowerCase()));
+    if (!student) {
+      // Don't reveal whether email exists — but still return a reset URL shape so UX is consistent
+      return res.status(404).json({ error: "No account found with that email address." });
+    }
+
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    const expiry = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await db.update(studentsTable)
+      .set({ resetToken: rawToken, resetTokenExpiry: expiry })
+      .where(eq(studentsTable.id, student.id));
+
+    const origin = req.headers.origin || `${req.protocol}://${req.headers.host}`;
+    const resetUrl = `${origin}/reset-password?token=${rawToken}`;
+
+    res.json({ resetUrl });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to generate reset link. Please try again." });
+  }
+});
+
+// POST /students/reset-password
+router.post("/students/reset-password", async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password) return res.status(400).json({ error: "Token and password are required" });
+  if (password.length < 8) return res.status(400).json({ error: "Password must be at least 8 characters" });
+
+  try {
+    const [student] = await db.select().from(studentsTable)
+      .where(and(eq(studentsTable.resetToken, token), gt(studentsTable.resetTokenExpiry, new Date())));
+
+    if (!student) {
+      return res.status(400).json({ error: "Invalid or expired reset link. Please request a new one." });
+    }
+
+    const passwordHash = await bcrypt.hash(password, 12);
+    await db.update(studentsTable)
+      .set({ passwordHash, resetToken: null, resetTokenExpiry: null })
+      .where(eq(studentsTable.id, student.id));
+
+    res.json({ message: "Password updated successfully." });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Failed to reset password. Please try again." });
   }
 });
 

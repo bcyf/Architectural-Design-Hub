@@ -16,6 +16,8 @@ export const studentsTable = pgTable("students", {
   collegeLevel: text("college_level").default("1st Year"),
   bio: text("bio"),
   profilePicture: text("profile_picture"),
+  resetToken: text("reset_token"),
+  resetTokenExpiry: timestamp("reset_token_expiry"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 

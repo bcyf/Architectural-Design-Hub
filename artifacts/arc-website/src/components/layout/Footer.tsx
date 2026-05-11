@@ -5,10 +5,12 @@ import { Input } from "@/components/ui/input";
 import { useSubscribeNewsletter } from "@workspace/api-client-react";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
+import { isStudentAuthenticated } from "@/lib/student-auth";
 
 export function Footer() {
   const { toast } = useToast();
   const [email, setEmail] = useState("");
+  const studentLoggedIn = isStudentAuthenticated();
   const subscribeMutation = useSubscribeNewsletter();
 
   const handleSubscribe = (e: React.FormEvent) => {
@@ -72,7 +74,8 @@ export function Footer() {
             <ul className="space-y-3 text-sm text-muted-foreground">
               <li><Link href="/about" className="hover:text-primary transition-colors inline-block hover:translate-x-1 transform duration-200">About Us</Link></li>
               <li><Link href="/events" className="hover:text-primary transition-colors inline-block hover:translate-x-1 transform duration-200">Events & RSVP</Link></li>
-              <li><Link href="/resources" className="hover:text-primary transition-colors inline-block hover:translate-x-1 transform duration-200">Student Resources</Link></li>
+              {studentLoggedIn && <li><Link href="/resources" className="hover:text-primary transition-colors inline-block hover:translate-x-1 transform duration-200">Members Hub</Link></li>}
+              {studentLoggedIn && <li><Link href="/groups" className="hover:text-primary transition-colors inline-block hover:translate-x-1 transform duration-200">Study Groups</Link></li>}
               <li><Link href="/gallery" className="hover:text-primary transition-colors inline-block hover:translate-x-1 transform duration-200">Project Gallery</Link></li>
               <li><Link href="/blog" className="hover:text-primary transition-colors inline-block hover:translate-x-1 transform duration-200">The Drafting Board</Link></li>
             </ul>

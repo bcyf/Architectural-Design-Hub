@@ -5,16 +5,19 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { isStudentAuthenticated, getStudentPayload, removeStudentToken, getStudentToken } from "@/lib/student-auth";
 
-const navLinks = [
+const publicNavLinks = [
   { label: "Home", href: "/" },
   { label: "About", href: "/about" },
   { label: "Events", href: "/events" },
-  { label: "Resources", href: "/resources" },
   { label: "Gallery", href: "/gallery" },
-  { label: "Groups", href: "/groups" },
   { label: "Blog", href: "/blog" },
   { label: "FAQ", href: "/faq" },
   { label: "Contact", href: "/contact" },
+];
+
+const memberNavLinks = [
+  { label: "Resources", href: "/resources" },
+  { label: "Groups", href: "/groups" },
 ];
 
 function NavAvatar({ name, profilePicture }: { name: string; profilePicture?: string | null }) {
@@ -97,7 +100,7 @@ export function Navbar() {
 
           {/* Desktop Nav */}
           <nav className="hidden md:flex items-center space-x-6">
-            {navLinks.map((link) => (
+            {[...publicNavLinks, ...(studentLoggedIn ? memberNavLinks : [])].map((link) => (
               <Link
                 key={link.href}
                 href={link.href}
@@ -198,7 +201,7 @@ export function Navbar() {
             className="fixed inset-0 top-0 pt-24 bg-background z-40 md:hidden flex flex-col px-6 pb-6 h-screen overflow-y-auto"
           >
             <div className="flex flex-col space-y-6 text-xl font-display font-medium">
-              {navLinks.map((link, i) => (
+              {[...publicNavLinks, ...(studentLoggedIn ? memberNavLinks : [])].map((link, i) => (
                 <motion.div
                   key={link.href}
                   initial={{ opacity: 0, x: -20 }}

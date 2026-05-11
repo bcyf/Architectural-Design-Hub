@@ -16,6 +16,8 @@ import NotFound from "@/pages/not-found";
 // Student Auth Pages
 import StudentLogin from "@/pages/StudentLogin";
 import StudentSignup from "@/pages/StudentSignup";
+import ForgotPassword from "@/pages/ForgotPassword";
+import ResetPassword from "@/pages/ResetPassword";
 import StudentProtectedRoute from "@/components/StudentProtectedRoute";
 import Groups from "@/pages/Groups";
 import GroupRoom from "@/pages/GroupRoom";
@@ -75,6 +77,8 @@ function Router() {
       {/* Student Auth */}
       <Route path="/login" component={StudentLogin} />
       <Route path="/signup" component={StudentSignup} />
+      <Route path="/forgot-password" component={ForgotPassword} />
+      <Route path="/reset-password" component={ResetPassword} />
 
       {/* Admin Login */}
       <Route path="/admin/login" component={AdminLogin} />

@@ -110,6 +110,13 @@ export default function AdminLogin() {
               {loading ? "Signing in..." : "Sign in"}
             </button>
           </form>
+
+          <p className="text-center text-zinc-600 text-xs mt-5">
+            Forgot your password?{" "}
+            <a href="mailto:archstudentassociationfbc@gmail.com" className="text-zinc-400 hover:text-white transition-colors underline">
+              Contact administrator
+            </a>
+          </p>
         </div>
 
         <p className="text-center text-zinc-600 text-xs mt-6">
