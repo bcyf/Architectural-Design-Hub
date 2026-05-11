@@ -120,11 +120,10 @@ export default function Resources() {
 
   const q = search.toLowerCase().trim();
 
-  const resourceTypes = ["all", ...Array.from(new Set(resources?.filter(r => r.type !== "software").map(r => r.type) ?? []))];
+  const resourceTypes = ["all", ...Array.from(new Set(resources?.map(r => r.type) ?? []))];
   const jobTypes     = ["all", ...Array.from(new Set(jobs?.map(j => j.type) ?? []))];
 
   const filteredResources = resources?.filter(r =>
-    r.type !== "software" &&
     (resourceFilter === "all" || r.type === resourceFilter) &&
     (!q ||
       r.title.toLowerCase().includes(q) ||
@@ -438,7 +437,7 @@ export default function Resources() {
         </div>
 
         <Tabs defaultValue="resources" className="w-full">
-          <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b border-border mb-12 rounded-none">
+          <TabsList className="w-full justify-start h-auto p-0 bg-transparent border-b border-border mb-12 rounded-none overflow-x-auto flex-nowrap">
             <TabsTrigger value="resources"
               className="rounded-none data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:border-b-2 data-[state=active]:border-primary py-4 px-6 text-base">
               <FileText className="w-4 h-4 mr-2" /> Academic Toolkit
