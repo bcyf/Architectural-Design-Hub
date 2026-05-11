@@ -321,22 +321,43 @@ export default function Resources() {
     const platforms = getSoftwarePlatforms(tags);
     const catMeta = getCategoryMeta((resource as any).category);
     const url = resource.fileUrl;
+    const logoUrl: string | null = resource.imageUrl ?? null;
 
     return (
       <div key={resource.id} className="border border-border hover:border-primary transition-colors bg-card flex flex-col h-full group">
+        {/* Logo banner */}
+        <div className="flex items-center justify-center h-28 bg-white border-b border-border px-6">
+          {logoUrl ? (
+            <img
+              src={logoUrl}
+              alt={`${resource.title} logo`}
+              className="max-h-16 max-w-[140px] object-contain"
+              onError={(e) => {
+                const el = e.currentTarget;
+                el.style.display = "none";
+                const fallback = el.nextElementSibling as HTMLElement | null;
+                if (fallback) fallback.style.display = "flex";
+              }}
+            />
+          ) : null}
+          <div
+            style={{ display: logoUrl ? "none" : "flex" }}
+            className="items-center justify-center w-16 h-16 rounded-2xl bg-secondary text-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors"
+          >
+            <AppWindow size={28} />
+          </div>
+        </div>
+
         <div className="p-6 flex flex-col flex-1">
-          <div className="flex justify-between items-start mb-4">
-            <div className="p-2.5 bg-secondary text-foreground group-hover:bg-primary group-hover:text-primary-foreground transition-colors">
-              <AppWindow size={22} />
-            </div>
+          <div className="flex justify-between items-start mb-3">
+            <h3 className="text-lg font-display font-bold leading-tight">{resource.title}</h3>
             {license && (
-              <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border uppercase tracking-wide ${license.color}`}>
+              <span className={`flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded border uppercase tracking-wide shrink-0 ml-2 ${license.color}`}>
                 <license.icon className="w-3 h-3" />{license.label}
               </span>
             )}
           </div>
 
-          <h3 className="text-lg font-display font-bold mb-1 leading-tight">{resource.title}</h3>
           {resource.software && resource.software !== resource.title && (
             <p className="text-xs text-muted-foreground font-medium mb-2">{resource.software}</p>
           )}
