@@ -44,7 +44,8 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
 }
 
 // Fixed Login Route
-router.post("/auth/login", async (req, res) => {
+// Fixed Login Route with Explicit Types
+router.post("/auth/login", async (req: Request, res: Response) => {
   const { username, password } = req.body;
   
   if (username !== ADMIN_USERNAME) {
@@ -60,7 +61,7 @@ router.post("/auth/login", async (req, res) => {
   return res.json({ token, username });
 });
 
-router.get("/auth/me", requireAuth, (req, res) => {
+router.get("/auth/me", requireAuth, (req: Request, res: Response) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) return res.status(401).json({ error: "No token provided" });
   
@@ -69,7 +70,7 @@ router.get("/auth/me", requireAuth, (req, res) => {
   return res.json({ username: payload.username, role: "admin" });
 });
 
-router.post("/auth/change-password", requireAuth, async (req, res) => {
+router.post("/auth/change-password", requireAuth, async (req: Request, res: Response) => {
   const { currentPassword, newPassword } = req.body;
 
   if (!currentPassword || !newPassword) {
