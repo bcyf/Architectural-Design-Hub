@@ -43,26 +43,31 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-if (error) {
-  return res.status(400).json(...)
-}
+// Fixed Login Route: Added the router.post definition and removed floating 'if (error)' block
+router.post("/auth/login", async (req, res) => {
   const { username, password } = req.body;
+  
   if (username !== ADMIN_USERNAME) {
     return res.status(401).json({ error: "Invalid username or password" });
   }
+  
   const valid = await validatePassword(password);
   if (!valid) {
     return res.status(401).json({ error: "Invalid username or password" });
   }
+  
   const token = jwt.sign({ username, role: "admin" }, JWT_SECRET, { expiresIn: "8h" });
   return res.json({ token, username });
 });
 
 router.get("/auth/me", requireAuth, (req, res) => {
-  const token = req.headers.authorization!.slice(7);
+  const authHeader = req.headers.authorization;
+  if (!authHeader) return res.status(401).json({ error: "No token provided" });
+  
+  const token = authHeader.slice(7);
   const payload = jwt.decode(token) as { username: string };
   return res.json({ username: payload.username, role: "admin" });
- });
+});
 
 router.post("/auth/change-password", requireAuth, async (req, res) => {
   const { currentPassword, newPassword } = req.body;
@@ -84,9 +89,12 @@ router.post("/auth/change-password", requireAuth, async (req, res) => {
   await db
     .insert(settingsTable)
     .values({ key: CUSTOM_PASSWORD_KEY, value: hash })
-    .onConflictDoUpdate({ target: settingsTable.key, set: { value: hash, updatedAt: new Date() } });
+    .onConflictDoUpdate({ 
+      target: settingsTable.key, 
+      set: { value: hash, updatedAt: new Date() } 
+    });
 
-  res.json({ success: true, message: "Password updated successfully" });
+  return res.json({ success: true, message: "Password updated successfully" });
 });
 
 export default router;
