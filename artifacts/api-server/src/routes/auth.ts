@@ -43,7 +43,7 @@ export function requireAuth(req: Request, res: Response, next: NextFunction) {
   }
 }
 
-// Fixed Login Route: Replaces the broken "if (error)" and missing declaration
+// Fixed Login Route
 router.post("/auth/login", async (req, res) => {
   const { username, password } = req.body;
   
@@ -93,11 +93,6 @@ router.post("/auth/change-password", requireAuth, async (req, res) => {
       target: settingsTable.key, 
       set: { value: hash, updatedAt: new Date() } 
     });
-
-  return res.json({ success: true, message: "Password updated successfully" });
-});
-
-export default router;
 
   return res.json({ success: true, message: "Password updated successfully" });
 });
